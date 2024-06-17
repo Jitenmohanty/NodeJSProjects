@@ -1,5 +1,6 @@
 import mongoose, { Schema, model } from 'mongoose'
 import {hash} from 'bcrypt'
+import bcrypt from 'bcrypt'
 
 const userSchema = new Schema({
     name:{
@@ -39,5 +40,8 @@ userSchema.pre("save",async function(next){
 
     this.password = await hash(this.password,10)
 })
+userSchema.methods.isPasswordCorrect = async function(password){
+    return await bcrypt.compare(password,this.password)
+}
 
 const User = mongoose.model.User || model("User",userSchema)
