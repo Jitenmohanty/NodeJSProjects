@@ -34,7 +34,7 @@ const login = async (req, res) => {
       if (!user) return res.status(400).json({ msg: 'Invalid credentials' });
   
       // Check if the user is blocked
-      if (user.status === 'blocked') {
+      if (user.isBlocked === true) {
         return res.status(403).json({ msg: 'Your account is blocked. Contact admin.' });
       }
   
