@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { User } from "../models/user.model";
 import jwt from "jsonwebtoken";
 
-const registerUser = async (req, res) => {
+export const registerUser = async (req, res) => {
   const { username, email, password, role } = req.body;
 
   try {
@@ -26,7 +26,7 @@ const registerUser = async (req, res) => {
   }
 };
 
-const login = async (req, res) => {
+export  const login = async (req, res) => {
     const { email, password } = req.body;
   
     try {
