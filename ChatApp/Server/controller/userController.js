@@ -35,5 +35,19 @@ const login = TryCatch(async(req,res,next)=>{
     return next(new ErrorHandler("User not found!"))
   }
 
-  const isPasswordValid = await userExist 
+  const isPasswordValid = await isPasswordCorrect(password);
+
+  if(!isPasswordValid){
+    throw new Error(401,"Invalid credential!")
+  }
+
+  const loggedInUser = await User.findById(userExist._id).select("-password");
+
+  const options = {
+    httpOnly: true,
+    // secure: false,
+  };
+
+  return await res.status(200)
+
 })
