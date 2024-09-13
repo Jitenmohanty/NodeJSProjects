@@ -15,7 +15,7 @@ export const addUser = async(req,res)=>{
 }
 
 // Edit student
-exports.editStudent = async (req, res) => {
+export const editStudent = async (req, res) => {
     const { name, email, age, course } = req.body;
   
     try {
@@ -33,7 +33,7 @@ exports.editStudent = async (req, res) => {
   };
   
   // Delete student
-  exports.deleteStudent = async (req, res) => {
+  export const deleteStudent = async (req, res) => {
     try {
       const student = await Student.findById(req.params.id);
       if (!student) {
