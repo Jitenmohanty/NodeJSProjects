@@ -40,7 +40,7 @@ export const editStudent = async (req, res) => {
         return res.status(404).json({ msg: 'Student not found' });
       }
   
-      await student.remove();
+      await student.deleteOne();
       res.json({ msg: 'Student deleted successfully' });
     } catch (error) {
       console.error(error);

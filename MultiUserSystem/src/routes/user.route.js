@@ -5,6 +5,6 @@ import { blockUser, unblockUser } from '../controllers/user.controller.js';
 const router = Router();
 
 router.route('/block/:id',adminChecker).put(blockUser)
-router.route('/unblock/:id',adminChecker).post(unblockUser);
+router.route('/unblock/:id',adminChecker).put(unblockUser);
 
 export default router;

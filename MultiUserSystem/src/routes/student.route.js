@@ -6,6 +6,6 @@ const router = Router();
 
 router.route('/add',authentication).post(addUser)
 router.route('/edit/:id',authentication).put(editStudent)
-router.route('/delete/:id',authentication).put(deleteStudent)
+router.route('/delete/:id',authentication).delete(deleteStudent)
 
 export default router;

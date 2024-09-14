@@ -1,12 +1,15 @@
 import { User } from "../models/user.model.js";
 
 export const blockUser = async (req, res) => {
+  const {id} = req.params.id;
   try {
-    const user = await User.findOne(req.params.id);
+    const user = await User.findOne({id});
     if (!user) {
       return res.status(404).json({ msg: "User not found" });
     }
-
+    if(user.isBlocked){
+      return res.status(404).json({ msg: "User already blocked" });
+    }
     user.isBlocked = true;
     await user.save();
 
@@ -20,12 +23,15 @@ export const blockUser = async (req, res) => {
 //Unblock a User.
 
 export const unblockUser = async(req,res)=>{
+  const {id} = req.params.id
     try {
-        const user = await User.findOne(req.params.id);
+        const user = await User.findOne({id});
         if (!user) {
           return res.status(404).json({ msg: "User not found" });
         }
-    
+        if(!user.isBlocked){
+          return res.status(404).json({ msg: "User was not in Block state" });
+        }
         user.isBlocked = false;
         await user.save();
     
