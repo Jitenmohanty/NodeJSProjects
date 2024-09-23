@@ -1,0 +1,15 @@
+{
+  "name": "bull_mq",
+  "version": "1.0.0",
+  "description": "Use of redis queue system",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jitu",
+  "license": "ISC",
+  "dependencies": {
+    "bullmq": "^5.13.2"
+  }
+}
