@@ -10,6 +10,6 @@
   "author": "Jitu",
   "license": "ISC",
   "dependencies": {
-    "bullmq": "^5.13.2"
+    "bullmq": "^4.10.0"
   }
 }
