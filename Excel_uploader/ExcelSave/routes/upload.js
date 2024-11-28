@@ -1,6 +1,7 @@
 import multer from "multer";
 import { Router } from 'express';
-import { getData, uploadData } from '../controller/upload.controller.js';
+import { filterData, getData, uploadData } from '../controller/upload.controller.js';
+import { uploadCandidateDataExcelFile } from "../controller/uploadCandidateData.controller.js";
 
 const router = Router();
 const storage = multer.diskStorage({
@@ -17,7 +18,9 @@ const storage = multer.diskStorage({
     storage,
 })
 
-router.route('/upload').post(upload.single('file'),uploadData)
+// router.route('/upload').post(upload.single('file'),uploadData)
+router.route('/upload').post(uploadCandidateDataExcelFile)
 router.route('/getData').get(getData)
+router.route("/filter").get(filterData)
 
 export default router;

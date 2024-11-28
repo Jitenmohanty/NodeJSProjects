@@ -12,13 +12,13 @@ const App = () => {
 
   useEffect(() => {
     async function fetchData() {
-      try {
-        const response = await fetch("/api/getData");
-        const datas = await response.json();
-        setData([...datas.data]);
-      } catch (error) {
-        console.log(error, "error on fetching data");
-      }
+      // try {
+      //   const response = await fetch("/api/getData");
+      //   const datas = await response.json();
+      //   setData([...datas.data]);
+      // } catch (error) {
+      //   console.log(error, "error on fetching data");
+      // }
     }
     fetchData();
   }, [loader]);
