@@ -102,7 +102,8 @@ router.get("/statistics", async (req, res) => {
 
     const soldItems = await ProductTransaction.countDocuments({ ...filter, sold: true });
     const notSoldItems = await ProductTransaction.countDocuments({ ...filter, sold: false });
-
+    console.log(soldItems,"Sold")
+    console.log(notSoldItems,"Not Sold")
     res.status(200).json({
       totalSaleAmount: totalSaleAmount[0]?.total || 0,
       soldItems,

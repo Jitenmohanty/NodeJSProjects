@@ -52,6 +52,7 @@ const App = () => {
     try {
       const response = await axios.get("/api/statistics", { params: { month, year } });
       setStatistics(response.data);
+      console.log(response.data)
     } catch (error) {
       console.error("Error fetching statistics", error);
     }
@@ -203,17 +204,18 @@ const App = () => {
         </div>
         <div className="bg-yellow-100 p-4 rounded">
           <h3 className="font-bold">Total Sold Items</h3>
-          <p>{statistics.totalSoldItems || 0}</p>
+          <p>{statistics.soldItems || 0}</p>
         </div>
         <div className="bg-red-100 p-4 rounded">
           <h3 className="font-bold">Total Unsold Items</h3>
-          <p>{statistics.totalUnsoldItems || 0}</p>
+          <p>{statistics.notSoldItems || 0}</p>
         </div>
       </div>
 
       {/* Bar Chart */}
       <div className="mb-4">
         <h3 className="font-bold mb-2">Transactions Bar Chart</h3>
+        
       </div>
     </div>
   );
