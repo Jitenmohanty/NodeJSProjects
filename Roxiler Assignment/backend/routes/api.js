@@ -116,13 +116,13 @@ router.get("/statistics", async (req, res) => {
 
 // Bar Chart API
 router.get("/bar-chart", async (req, res) => {
-  const { month } = req.query;
+  const { month,year } = req.query;
 
   try {
     const filter = {
       dateOfSale: {
-        $gte: new Date(`2024-${month}-01`),
-        $lt: new Date(`2024-${month}-31`),
+        $gte: new Date(`${year}-${month}-01`),
+        $lt: new Date(`${year}-${month}-31`),
       },
     };
 

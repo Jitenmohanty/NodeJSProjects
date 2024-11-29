@@ -2,6 +2,17 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Bar } from "react-chartjs-2";
 import debounce from "lodash.debounce";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const App = () => {
   const [transactions, setTransactions] = useState([]);
@@ -50,9 +61,10 @@ const App = () => {
   // Fetch Statistics
   const fetchStatistics = async () => {
     try {
-      const response = await axios.get("/api/statistics", { params: { month, year } });
+      const response = await axios.get("/api/statistics", {
+        params: { month, year },
+      });
       setStatistics(response.data);
-      console.log(response.data)
     } catch (error) {
       console.error("Error fetching statistics", error);
     }
@@ -60,13 +72,17 @@ const App = () => {
 
   const fetchBarChartData = async () => {
     try {
-      const response = await axios.get("/api/bar-chart", { params: { month, year } });
+      const response = await axios.get("/api/bar-chart", {
+        params: { month, year },
+      });
+      console.log(response.data);
       if (Array.isArray(response.data) && response.data.length > 0) {
         const labels = response.data.map((range) => range._id);
         const values = response.data.map((range) => range.count);
-
+        console.log(labels);
+        console.log(values);
         setBarChartData({
-          labels,
+          labels: labels,
           datasets: [
             {
               label: "Number of Items",
@@ -172,7 +188,9 @@ const App = () => {
               <td className="border p-2">{txn.description}</td>
               <td className="border p-2">${txn.price}</td>
               <td className="border p-2">{txn.sold ? "Yes" : "No"}</td>
-              <td className="border p-2">{new Date(txn.dateOfSale).toDateString()}</td>
+              <td className="border p-2">
+                {new Date(txn.dateOfSale).toDateString()}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -213,9 +231,30 @@ const App = () => {
       </div>
 
       {/* Bar Chart */}
+      {/* Bar Chart */}
       <div className="mb-4">
-        <h3 className="font-bold mb-2">Transactions Bar Chart</h3>
-        
+        <h3 className="font-bold mb-2 text-2xl">Transactions Bar Chart</h3>
+        {barChartData.labels ? (
+          <Bar
+            data={barChartData}
+            options={{
+              responsive: true,
+              plugins: {
+                legend: {
+                  position: "top",
+                },
+                title: {
+                  display: true,
+                  text: "Transaction Price Ranges",
+                },
+              },
+            }}
+          />
+        ) : (
+          <p className="text-gray-500">
+            No data available for the selected month and year.
+          </p>
+        )}
       </div>
     </div>
   );
