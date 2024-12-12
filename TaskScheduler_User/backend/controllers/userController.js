@@ -7,8 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 // Register a new user
 const registerUser = async (req, res) => {
-  const { name, email, password, role } = req.body;
-
+  const { username:name, email, password, role } = req.body;
   if (!name || !email || !password || !role) {
     return res.status(400).json({ message: "All fields are required" });
   }
@@ -42,7 +41,7 @@ const registerUser = async (req, res) => {
 // Login a user
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
-
+console.log(req.body)
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password are required" });
   }
@@ -84,11 +83,22 @@ const loginUser = async (req, res) => {
 // Get all users (Admin only)
 const getUsers = async (req, res) => {
   try {
-    const users = await User.find({}, "-password"); // Exclude passwords
-    res.status(200).json(users);
+    // Get user information based on the decoded token data (req.user)
+    const user = await User.findById(req.user.id).select("-password"); // Exclude password
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error fetching users" });
+    res.status(500).json({ message: "Error fetching user data" });
   }
 };
 
@@ -104,9 +114,24 @@ const addUser = async (req, res) => {
   }
 };
 
+const getAllUser = async(req,res)=>{
+  try {
+    const users = await User.find().select('_id name');
+
+    if(users.length === 0){
+      return res.status(400).json({message:"No user found"});
+    }
+    return res.status(201).json(users)
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error at fetching users" });
+  }
+}
+
 module.exports = {
   registerUser,
   loginUser,
   getUsers,
-  addUser
+  addUser,
+  getAllUser
 };

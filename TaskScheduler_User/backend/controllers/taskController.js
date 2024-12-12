@@ -1,5 +1,6 @@
 const Task = require("../models/Task");
 const User = require("../models/User");
+const jwt = require("jsonwebtoken");
 
 // Create a new task
 const createTask = async (req, res) => {
@@ -35,10 +36,11 @@ const createTask = async (req, res) => {
 
 // Get tasks for a specific user
 const getTasks = async (req, res) => {
-  const { userId } = req.query;
-
+  // Attach user ID to request
   try {
-    const tasks = await Task.find({ assignee: userId }).populate("assignee", "name email role");
+    const token = req.headers.authorization?.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const tasks = await Task.find({ assignee: decoded.id }).populate("assignee", "name email role");
     res.status(200).json(tasks);
   } catch (error) {
     console.error(error);
