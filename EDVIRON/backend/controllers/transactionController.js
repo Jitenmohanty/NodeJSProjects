@@ -143,40 +143,59 @@ exports.checkTransactionStatus = async (req, res) => {
 };
 
 // Webhook for status update
-exports.webhookUpdate = async (req, res) => {
-  const { order_info } = req.body;
+exports.webhookStatusUpdate = async (req, res) => {
   try {
-    const updatedTransaction = await Transaction.findOneAndUpdate(
-      { collect_id: order_info.order_id },
-      { status: req.body.status },
-      { new: true }
-    );
-    if (!updatedTransaction) {
-      return res.status(404).json({
+    const { status, order_info } = req.body;
+    // Validate payload
+    if (!status || !order_info || !order_info.order_id) {
+      return res.status(400).json({
         success: false,
-        message: "Transaction not found for the provided order ID",
+        message: "Invalid payload format",
       });
     }
-    res.status(200).json({
+
+    const { order_id, order_amount, transaction_amount, gateway, bank_reference } = order_info;
+
+    // Find the transaction by its unique order_id
+    const transaction = await Transaction.findOne({ collect_id: order_id });
+
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        message: "Transaction not found",
+      });
+    }
+
+    // Update transaction details
+    transaction.status = status;
+    transaction.order_amount = order_amount;
+    transaction.transaction_amount = transaction_amount;
+    transaction.gateway = gateway;
+    transaction.bank_reference = bank_reference;
+
+    // Save updated transaction
+    await transaction.save();
+
+    return res.status(200).json({
       success: true,
       message: "Transaction status updated successfully",
     });
-  } catch (err) {
-    res.status(500).json({
+  } catch (error) {
+    console.error("Error updating transaction status:", error);
+    return res.status(500).json({
       success: false,
-      message: "Failed to update transaction status",
-      error: err.message || "Internal Server Error",
+      message: "Internal Server Error",
     });
   }
 };
 
 // Manual status update
 exports.manualUpdate = async (req, res) => {
-  const { collect_id, status } = req.body;
+  const { collect_id, newStatus } = req.body;
   try {
     const updatedTransaction = await Transaction.findOneAndUpdate(
       { collect_id },
-      { status },
+      { status:newStatus },
       { new: true }
     );
     if (!updatedTransaction) {

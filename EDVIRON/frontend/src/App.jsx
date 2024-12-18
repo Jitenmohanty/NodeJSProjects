@@ -4,6 +4,7 @@ import TransactionsPage from "./pages/TransactionsPage";
 import TransactionDetailsPage from "./pages/TransactionDetailsPage";
 import StatusCheckPage from "./pages/StatusCheckPage";
 import Navbar from "./components/Navbar";
+import WebhookUI from "./components/WebhookUI";
 
 const App = () => {
   return (
@@ -15,6 +16,7 @@ const App = () => {
           <Route path="/details" element={<TransactionDetailsPage />} />
           <Route path="/status" element={<StatusCheckPage />} />
         </Routes>
+        <WebhookUI/>
       </div>
     </Router>
   );

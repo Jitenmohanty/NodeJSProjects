@@ -4,16 +4,16 @@ const {
   getAllTransactions,
   getTransactionsBySchool,
   checkTransactionStatus,
-  webhookUpdate,
   manualUpdate,
   getAllSchools,
+  webhookStatusUpdate,
 } = require("../controllers/transactionController");
 
 router.get("/", getAllTransactions);
 router.get("/schools", getAllSchools);
 router.get("/school/:school_id", getTransactionsBySchool);
 router.get("/check-status/:orderId", checkTransactionStatus);
-router.post("/webhook", webhookUpdate);
+router.post("/webhook/status-update", webhookStatusUpdate);
 router.post("/manual-update", manualUpdate);
 
 module.exports = router;
