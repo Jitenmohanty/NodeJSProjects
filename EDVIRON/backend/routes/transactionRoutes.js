@@ -6,11 +6,13 @@ const {
   checkTransactionStatus,
   webhookUpdate,
   manualUpdate,
+  getAllSchools,
 } = require("../controllers/transactionController");
 
 router.get("/", getAllTransactions);
-router.get("/:school_id", getTransactionsBySchool);
-router.post("/check-status", checkTransactionStatus);
+router.get("/schools", getAllSchools);
+router.get("/school/:school_id", getTransactionsBySchool);
+router.get("/check-status/:orderId", checkTransactionStatus);
 router.post("/webhook", webhookUpdate);
 router.post("/manual-update", manualUpdate);
 

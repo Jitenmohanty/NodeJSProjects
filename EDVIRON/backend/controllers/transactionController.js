@@ -1,23 +1,42 @@
 const Transaction = require("../models/Transaction");
 
 exports.getAllTransactions = async (req, res) => {
-  const { status, date, page = 1 } = req.query; // Extract query parameters
+  const {
+    payment,
+    transactionAmount,
+    orderAmount,
+    status,
+    date,
+    page = 1,
+  } = req.query; // Extract query parameters
   const limit = 10; // Number of transactions per page
   const skip = (page - 1) * limit; // Calculate documents to skip for pagination
 
   let filter = {}; // Initialize filter object
-
+  console.log(date);
   // Add status filter if provided
   if (status) {
     filter.status = status;
   }
+  if (payment) {
+    filter.gateway = payment;
+  }
+  if (orderAmount) {
+    filter.order_amount = orderAmount;
+  }
+  if (transactionAmount) {
+    filter.transaction_amount = transactionAmount;
+  }
 
   // Add date range filter if provided
   if (date) {
-    const [startDate, endDate] = date.split(","); // Assuming date is a comma-separated string
-    filter.createdAt = {
-      $gte: new Date(startDate),
-      $lte: new Date(endDate),
+    const specificDate = new Date(date);
+    const nextDay = new Date(specificDate);
+    nextDay.setDate(specificDate.getDate() + 1);
+
+    filter.updated_at = {
+      $gte: specificDate, // Start of the day
+      $lt: nextDay, // Start of the next day
     };
   }
 
@@ -49,6 +68,30 @@ exports.getAllTransactions = async (req, res) => {
   }
 };
 
+exports.getAllSchools = async (req, res) => {
+  try {
+    // Fetch distinct school IDs from the Transaction collection
+    const schoolIds = await Transaction.distinct("school_id");
+    if (schoolIds.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No school IDs found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "School IDs fetched successfully",
+      data: schoolIds,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch school IDs",
+      error: err.message || "Internal Server Error",
+    });
+  }
+};
 
 // Fetch transactions by school ID
 exports.getTransactionsBySchool = async (req, res) => {
@@ -75,11 +118,10 @@ exports.getTransactionsBySchool = async (req, res) => {
   }
 };
 
-// Check transaction status
 exports.checkTransactionStatus = async (req, res) => {
-  const { custom_order_id } = req.body;
+  const { orderId } = req.params; // Extract from URL parameters
   try {
-    const transaction = await Transaction.findOne({ custom_order_id });
+    const transaction = await Transaction.findOne({ custom_order_id: orderId });
     if (!transaction) {
       return res.status(404).json({
         success: false,

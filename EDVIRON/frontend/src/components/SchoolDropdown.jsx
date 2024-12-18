@@ -6,8 +6,8 @@ const SchoolDropdown = ({ schools, onSelect }) => {
     <select onChange={(e) => onSelect(e.target.value)} className="p-2 border rounded">
       <option value="">Select School</option>
       {schools.map((school) => (
-        <option key={school.id} value={school.id}>
-          {school.name} (ID: {school.id})
+        <option key={school.id} value={school}>
+           (ID: {school})
         </option>
       ))}
     </select>
@@ -15,3 +15,5 @@ const SchoolDropdown = ({ schools, onSelect }) => {
 };
 
 export default SchoolDropdown;
+
+

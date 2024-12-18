@@ -14,7 +14,7 @@ const TransactionDetailsPage = () => {
     const fetchSchools = async () => {
       try {
         const response = await axios.get("/api/transactions/schools");
-        setSchools(response.data.schools);
+        setSchools(response.data.data);
       } catch (error) {
         console.error("Error fetching schools:", error);
       }
@@ -27,8 +27,8 @@ const TransactionDetailsPage = () => {
     if (selectedSchool) {
       const fetchTransactions = async () => {
         try {
-          const response = await axios.get(`/transactions/school/${selectedSchool}`);
-          setTransactions(response.data.transactions);
+          const response = await axios.get(`/api/transactions/school/${selectedSchool}`);
+          setTransactions(response.data.data);
         } catch (error) {
           console.error("Error fetching school transactions:", error);
         }

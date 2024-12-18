@@ -9,10 +9,11 @@ const StatusCheckPage = () => {
 
   const checkStatus = async (orderId) => {
     if (!orderId) return;
+    console.log(orderId);
     setLoading(true);
     try {
       const response = await axios.get(`/api/transactions/check-status/${orderId}`);
-      setStatus(response.data.status);
+      setStatus(response.data.data.status); // Access the nested `data` field
     } catch (error) {
       console.error("Error checking transaction status:", error);
       setStatus("Error retrieving status.");
@@ -20,6 +21,7 @@ const StatusCheckPage = () => {
       setLoading(false);
     }
   };
+  
 
   return (
     <div>
