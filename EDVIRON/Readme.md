@@ -134,7 +134,8 @@ Login an existing user and generate a JWT token.
 Request Body:
 
 json
-Copy code
+**Request Body**:
+  ```json
 {
   "username": "john_doe",
   "password": "password123"
@@ -142,7 +143,8 @@ Copy code
 Response:
 
 json
-Copy code
+**Request Body**:
+  ```json
 {
   "token": "JWT_TOKEN"
 }
@@ -152,7 +154,8 @@ Retrieve all transaction records.
 Response:
 
 json
-Copy code
+**Request Body**:
+  ```json
 [
   {
     "collect_id": "transaction123",
@@ -184,7 +187,8 @@ school_id: The ID of the school to filter by.
 Response:
 
 json
-Copy code
+**Request Body**:
+  ```json
 [
   {
     "collect_id": "transaction123",
@@ -207,7 +211,8 @@ orderId: The custom_order_id of the transaction to check.
 Response:
 
 json
-Copy code
+**Request Body**:
+  ```json
 {
   "status": 200,
   "order_info": {
@@ -227,7 +232,8 @@ Webhook to receive and update the transaction status.
 Request Body:
 
 json
-Copy code
+**Request Body**:
+  ```json
 {
   "status": 200,
   "order_info": {
@@ -244,3 +250,4 @@ Copy code
 - Follow the provided API documentation closely for integration details.
 
 ---
+
