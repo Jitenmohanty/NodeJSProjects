@@ -112,8 +112,132 @@ This backend service is built using NestJS and MongoDB to manage students, fees,
 6. **API Testing**:
    - Use Postman or similar tools to test the APIs.
 
----
+---## API Endpoints
 
+### **1. User Authentication Routes**
+These routes handle user registration, login, and user management.
+
+- **POST `/api/users/register`**  
+  Register a new user.
+
+  **Request Body**:
+  ```json
+  {
+    "username": "john_doe",
+    "password": "password123",
+    "email": "john.doe@example.com"
+  }
+
+ - **POST /api/users/login**
+Login an existing user and generate a JWT token.
+
+Request Body:
+
+json
+Copy code
+{
+  "username": "john_doe",
+  "password": "password123"
+}
+Response:
+
+json
+Copy code
+{
+  "token": "JWT_TOKEN"
+}
+ -  **GET `/api/transactions`**  
+Retrieve all transaction records.
+
+Response:
+
+json
+Copy code
+[
+  {
+    "collect_id": "transaction123",
+    "school_id": "school_abc",
+    "gateway": "PhonePe",
+    "order_amount": 2000,
+    "transaction_amount": 2200,
+    "status": "completed",
+    "custom_order_id": "order_123"
+  },
+  {
+    "collect_id": "transaction124",
+    "school_id": "school_xyz",
+    "gateway": "Razorpay",
+    "order_amount": 1500,
+    "transaction_amount": 1550,
+    "status": "pending",
+    "custom_order_id": "order_124"
+  }
+]
+
+ -  **GET `/api/transactions/school/:school_id`**  
+
+Retrieve all transactions for a specific school using school_id.
+
+URL Parameters:
+
+school_id: The ID of the school to filter by.
+Response:
+
+json
+Copy code
+[
+  {
+    "collect_id": "transaction123",
+    "school_id": "school_abc",
+    "gateway": "PhonePe",
+    "order_amount": 2000,
+    "transaction_amount": 2200,
+    "status": "completed",
+    "custom_order_id": "order_123"
+  }
+]
+
+
+- **GET /api/transactions/check-status/:orderId**
+Retrieve the current status of a transaction using custom_order_id.
+
+URL Parameters:
+
+orderId: The custom_order_id of the transaction to check.
+Response:
+
+json
+Copy code
+{
+  "status": 200,
+  "order_info": {
+    "order_id": "order_123",
+    "order_amount": 2000,
+    "transaction_amount": 2200,
+    "gateway": "PhonePe",
+    "status": "completed",
+    "bank_reference": "YESBNK222"
+  }
+}
+
+
+- **POST /api/transactions/webhook/status-update**
+Webhook to receive and update the transaction status.
+
+Request Body:
+
+json
+Copy code
+{
+  "status": 200,
+  "order_info": {
+    "order_id": "transaction123",
+    "order_amount": 2000,
+    "transaction_amount": 2200,
+    "gateway": "PhonePe",
+    "bank_reference": "YESBNK222"
+  }
+}
 ## Notes
 - Ensure MongoDB is running before starting the application.
 - Validate API payloads and responses for accurate data handling.
