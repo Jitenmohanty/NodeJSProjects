@@ -9,8 +9,6 @@ import Home from './components/Home';
 // Lazy load components for better performance
 const AuthComponent = React.lazy(() => import('./components/AuthComponent'));
 // const ChatInterface = React.lazy(() => import('./components/ChatInterface'));
-const UserProfile = React.lazy(() => import('./components/UserProfile'));
-const Settings = React.lazy(() => import('./components/Settings'));
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -120,22 +118,6 @@ const App = () => {
 
               {/* Protected Routes */}
             
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <UserProfile />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                }
-              />
           
 
               {/* Catch all route */}
