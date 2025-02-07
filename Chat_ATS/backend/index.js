@@ -5,6 +5,9 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const http = require('http');
 const { Server } = require('socket.io');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 require('dotenv').config();
 
@@ -19,6 +22,46 @@ const io = new Server(server, {
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = 'uploads';
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir);
+    }
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ];
+  
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type'), false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
 
 // MongoDB connection
 mongoose.connect(`${process.env.MONGODB_URI}`);
@@ -35,11 +78,30 @@ const messageSchema = new mongoose.Schema({
   sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   text: String,
-  timestamp: { type: Date, default: Date.now }
+  fileUrl: String,
+  fileName: String,
+  fileType: String,
+  timestamp: { type: Date, default: Date.now },
+  status: { type: String, enum: ['sent', 'delivered', 'read'], default: 'sent' },
+  readAt: { type: Date, default: null }
 });
 
 const User = mongoose.model('User', userSchema);
 const Message = mongoose.model('Message', messageSchema);
+
+// File upload route
+app.post('/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+  
+  const fileUrl = `http://localhost:3000/uploads/${req.file.filename}`;
+  res.json({
+    fileUrl,
+    fileName: req.file.originalname,
+    fileType: req.file.mimetype
+  });
+});
 
 // Authentication Middleware
 const authenticateToken = (req, res, next) => {
@@ -145,29 +207,67 @@ io.on('connection', (socket) => {
   });
 
   socket.on('send_message', async (data) => {
-    const { senderId, receiverId, text } = data;
-    
-    const message = new Message({
-      sender: senderId,
-      receiver: receiverId,
-      text: text
-    });
-    await message.save();
-
-    const receiverSocketId = connectedUsers.get(receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit('receive_message', {
-        message,
-        sender: await User.findById(senderId).select('name')
+    try {
+      const { senderId, receiverId, text, fileUrl, fileName, fileType } = data;
+      
+      // Create and save the message without specifying _id
+      const message = new Message({
+        sender: senderId,
+        receiver: receiverId,
+        text: text || '',
+        fileUrl,
+        fileName,
+        fileType,
+        status: 'sent'
       });
+      
+      await message.save();
+      console.log('Message saved:', message);
+
+      // Send to receiver if online
+      const receiverSocketId = connectedUsers.get(receiverId);
+      if (receiverSocketId) {
+        const sender = await User.findById(senderId).select('name');
+        io.to(receiverSocketId).emit('receive_message', {
+          message,
+          sender
+        });
+        
+        // Update message status to delivered
+        message.status = 'delivered';
+        await message.save();
+        
+        // Notify sender about delivery
+        io.to(connectedUsers.get(senderId)).emit('message_status_update', {
+          messageId: message._id,
+          status: 'delivered'
+        });
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      socket.emit('message_error', { error: 'Failed to send message' });
     }
   });
 
-  socket.on('typing', (data) => {
-    const { senderId, receiverId } = data;
-    const receiverSocketId = connectedUsers.get(receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit('user_typing', { senderId });
+  socket.on('message_read', async ({ messageId, readBy, senderId }) => {
+    try {
+      const message = await Message.findById(messageId);
+      if (message && message.sender.toString() === senderId && !message.readAt) {
+        message.status = 'read';
+        message.readAt = new Date();
+        await message.save();
+        
+        const senderSocketId = connectedUsers.get(senderId);
+        if (senderSocketId) {
+          io.to(senderSocketId).emit('message_status_update', {
+            messageId,
+            status: 'read',
+            readAt: message.readAt
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error marking message as read:', error);
     }
   });
 
