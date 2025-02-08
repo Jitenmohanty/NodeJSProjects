@@ -6,8 +6,9 @@ import { useAuth } from "../context/AuthContext";
 const Home = () => {
   const [openChat, setOpenChat] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState({});
-  const { user, socket } = useAuth();
+  const { user, socket, fetchUsers, setUsers } = useAuth();
 
+  // Handle socket events for messages and user status
   useEffect(() => {
     if (!socket) return;
 
@@ -20,20 +21,46 @@ const Home = () => {
       }
     };
 
-    socket.on("receive_message", handleReceiveMessage);
-    socket.on("user_status_change", ({ userId, online }) => {});
-
-    return () => {
-      socket.off("receive_message", handleReceiveMessage);
-      socket.off("user_status_change");
+    const handleUserStatus = ({ userId, online }) => {
+      setUsers((prev) =>
+        prev.map((u) => (u._id === userId ? { ...u, online } : u))
+      );
     };
-  }, [socket, openChat, user]);
 
-  useEffect(() => {
-    if (socket && user) {
+    const handleUsersStatusUpdate = (users) => {
+      setUsers((prev) =>
+        prev.map((u) => {
+          const updatedUser = users.find((user) => user._id === u._id);
+          return updatedUser ? { ...u, online: updatedUser.online } : u;
+        })
+      );
+    };
+
+    socket.on("receive_message", handleReceiveMessage);
+    socket.on("user_status_change", handleUserStatus);
+    socket.on("users_status_update", handleUsersStatusUpdate);
+
+    // Emit user_connected when socket is ready
+    if (user) {
       socket.emit("user_connected", user.id);
     }
-  }, [socket, user]);
+
+    return () => {
+      if (user) {
+        socket.emit("user_disconnected", user.id);
+      }
+      socket.off("receive_message", handleReceiveMessage);
+      socket.off("user_status_change", handleUserStatus);
+      socket.off("users_status_update", handleUsersStatusUpdate);
+    };
+  }, [socket, openChat, user, setUsers]);
+
+  // Fetch initial users list
+  useEffect(() => {
+    if (!user) {
+      fetchUsers();
+    }
+  }, [user, fetchUsers]);
 
   const totalUnreadMessages = Object.values(unreadMessages).reduce(
     (sum, count) => sum + count,
@@ -59,7 +86,6 @@ const Home = () => {
         – Peter Drucker
       </p>
 
-      {/* Chat Button */}
       <button
         onClick={handleOpenChat}
         className="flex items-center gap-2 cursor-pointer px-6 py-3 bg-white text-blue-600 font-semibold rounded-full shadow-lg hover:bg-gray-100 transition fixed bottom-6 right-6"
@@ -75,7 +101,6 @@ const Home = () => {
         <span>Open Chat</span>
       </button>
 
-      {/* Render ChatInterface When Open */}
       {openChat && (
         <ChatInterface
           setOpenChat={handleCloseChat}

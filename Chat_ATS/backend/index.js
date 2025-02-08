@@ -201,9 +201,17 @@ io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   socket.on('user_connected', async (userId) => {
-    connectedUsers.set(userId, socket.id);
-    await User.findByIdAndUpdate(userId, { online: true });
-    io.emit('user_status_change', { userId, online: true });
+    try {
+      connectedUsers.set(userId, socket.id);
+      await User.findByIdAndUpdate(userId, { online: true });
+      io.emit('user_status_change', { userId, online: true });
+      
+      // Fetch and broadcast current online status of all users
+      const users = await User.find({}).select('_id online');
+      io.emit('users_status_update', users);
+    } catch (error) {
+      console.error('Error updating user status:', error);
+    }
   });
 
   socket.on('send_message', async (data) => {
@@ -222,7 +230,7 @@ io.on('connection', (socket) => {
       });
       
       await message.save();
-      console.log('Message saved:', message);
+      // console.log('Message saved:', message);
 
       // Send to receiver if online
       const receiverSocketId = connectedUsers.get(receiverId);
@@ -271,26 +279,34 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('disconnect', async () => {
-    let disconnectedUserId = null;
-    for (const [userId, socketId] of connectedUsers.entries()) {
-      if (socketId === socket.id) {
-        disconnectedUserId = userId;
-        connectedUsers.delete(userId);
-        break;
-      }
-    }
-
-    if (disconnectedUserId) {
-      await User.findByIdAndUpdate(disconnectedUserId, { online: false });
-      io.emit('user_status_change', { userId: disconnectedUserId, online: false });
+  socket.on('user_disconnected', async (userId) => {
+    try {
+      connectedUsers.delete(userId);
+      await User.findByIdAndUpdate(userId, { online: false });
+      io.emit('user_status_change', { userId, online: false });
+    } catch (error) {
+      console.error('Error updating user status:', error);
     }
   });
 
-  socket.on('user_disconnected', async (userId) => {
-    connectedUsers.delete(userId);
-    await User.findByIdAndUpdate(userId, { online: false });
-    io.emit('user_status_change', { userId, online: false });
+  socket.on('disconnect', async () => {
+    try {
+      let disconnectedUserId = null;
+      for (const [userId, socketId] of connectedUsers.entries()) {
+        if (socketId === socket.id) {
+          disconnectedUserId = userId;
+          connectedUsers.delete(userId);
+          break;
+        }
+      }
+
+      if (disconnectedUserId) {
+        await User.findByIdAndUpdate(disconnectedUserId, { online: false });
+        io.emit('user_status_change', { userId: disconnectedUserId, online: false });
+      }
+    } catch (error) {
+      console.error('Error handling disconnect:', error);
+    }
   });
 });
 

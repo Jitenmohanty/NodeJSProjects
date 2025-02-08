@@ -43,9 +43,17 @@ export const AuthProvider = ({ children }) => {
       }
     });
 
+    // Disconnect handler
+    socket.on('disconnect', () => {
+      if (user) {
+        socket.emit('user_disconnected', user.id);
+      }
+    });
+
     return () => {
       socket.off('user_status_change');
       socket.off('connect');
+      socket.off('disconnect');
     };
   }, [socket, user]);
 
@@ -80,6 +88,9 @@ export const AuthProvider = ({ children }) => {
       });
 
       setUser(response.data.user);
+      if (socket) {
+        socket.emit('user_connected', response.data.user.id);
+      }
     } catch (error) {
       localStorage.removeItem('token');
       delete axios.defaults.headers.common['Authorization'];

@@ -17,10 +17,9 @@ const login = async (req, res) => {
   const { email, password } = req.body;
   try {
     const user = await User.findOne({ email });
-    console.log(user)
-    // if (!user || (await user.comparePassword(password))) {
-    //   throw new Error("Invalid credentials");
-    // }
+    if (!user || (await user.comparePassword(password))) {
+      throw new Error("Invalid credentials");
+    }
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
     res.json({ token });
   } catch (err) {

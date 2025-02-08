@@ -5,25 +5,26 @@ export const useSocket = (userId) => {
   const socket = useRef();
 
   useEffect(() => {
+    // Initialize socket connection
     socket.current = io('http://localhost:3000');
 
+    // Connect and set online status when userId is available
     if (userId) {
       socket.current.emit('user_connected', userId);
     }
 
+    // Cleanup function
     return () => {
-      if (socket.current) {
+      if (socket.current && userId) {
         socket.current.emit('user_disconnected', userId);
         socket.current.disconnect();
       }
     };
-  }, [userId]);
+  }, [userId]); // Only re-run when userId changes
 
   const sendMessage = (receiverId, text, fileData = null) => {
     if (socket.current) {
-      const messageId = Date.now().toString();
       const messageData = {
-        messageId,
         senderId: userId,
         receiverId,
         text,
@@ -31,7 +32,6 @@ export const useSocket = (userId) => {
       };
       
       socket.current.emit('send_message', messageData);
-      return messageId;
     }
   };
 

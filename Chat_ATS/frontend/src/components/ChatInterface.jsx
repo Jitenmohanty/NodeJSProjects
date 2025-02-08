@@ -17,10 +17,67 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
   const [uploading, setUploading] = useState(false);
   const messagesEndRef = useRef(null);
 
+  // Fetch users on mount
   useEffect(() => {
+    if(users.length === 0)
     fetchUsers();
   }, []);
 
+  // Handle socket events
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleReceiveMessage = (data) => {
+      if (data.message.sender === selectedUser?._id) {
+        setMessages((prev) => [...prev, data.message]);
+        markMessageAsRead(data.message._id, data.message.sender);
+        setUnreadMessages((prev) => ({
+          ...prev,
+          [selectedUser._id]: 0,
+        }));
+      } else {
+        setUnreadMessages((prev) => ({
+          ...prev,
+          [data.message.sender]: (prev[data.message.sender] || 0) + 1,
+        }));
+      }
+    };
+
+    const handleMessageStatus = ({ messageId, status, readAt }) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === messageId ? { ...msg, status, readAt } : msg
+        )
+      );
+    };
+
+    const handleUserStatus = ({ userId, online }) => {
+      setUsers((prev) =>
+        prev.map((u) => (u._id === userId ? { ...u, online } : u))
+      );
+    };
+
+    socket.on("receive_message", handleReceiveMessage);
+    socket.on("message_status_update", handleMessageStatus);
+    socket.on("user_status_change", handleUserStatus);
+    socket.on("users_status_update", (users) => {
+      setUsers((prev) =>
+        prev.map((u) => {
+          const updatedUser = users.find((user) => user._id === u._id);
+          return updatedUser ? { ...u, online: updatedUser.online } : u;
+        })
+      );
+    });
+
+    return () => {
+      socket.off("receive_message", handleReceiveMessage);
+      socket.off("message_status_update", handleMessageStatus);
+      socket.off("user_status_change", handleUserStatus);
+      socket.off("users_status_update");
+    };
+  }, [socket, selectedUser, user]);
+
+  // Fetch messages when selected user changes
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedUser) return;
@@ -36,7 +93,7 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
           }
         });
       } catch (error) {
-        alert("Failed to fetch messages");
+        console.error("Failed to fetch messages:", error);
       } finally {
         setLoading(false);
       }
@@ -44,50 +101,12 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
     fetchMessages();
   }, [selectedUser]);
 
-  useEffect(() => {
-    if (!socket) return;
-
-    socket.on("receive_message", (data) => {
-      if (data.message.sender === selectedUser?._id) {
-        setMessages((prev) => [...prev, data.message]);
-        markMessageAsRead(data.message._id, data.message.sender);
-        setUnreadMessages((prev) => ({
-          ...prev,
-          [selectedUser._id]: 0,
-        }));
-      } else {
-        setUnreadMessages((prev) => ({
-          ...prev,
-          [data.message.sender]: (prev[data.message.sender] || 0) + 1,
-        }));
-      }
-    });
-
-    socket.on("message_status_update", ({ messageId, status, readAt }) => {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg._id === messageId ? { ...msg, status, readAt } : msg
-        )
-      );
-    });
-
-    socket.on("user_status_change", ({ userId, online }) => {
-      setUsers((prev) =>
-        prev.map((u) => (u._id === userId ? { ...u, online } : u))
-      );
-    });
-
-    return () => {
-      socket.off("receive_message");
-      socket.off("message_status_update");
-      socket.off("user_status_change");
-    };
-  }, [socket, selectedUser, user]);
-
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Clear unread messages when selecting a user
   useEffect(() => {
     if (selectedUser) {
       setUnreadMessages((prev) => ({
@@ -103,7 +122,6 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
 
     try {
       const tempMessage = {
-        _id: Date.now(),
         sender: user.id,
         receiver: selectedUser._id,
         text: message.trim(),
@@ -116,7 +134,7 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
 
       sendMessage(selectedUser._id, message.trim());
     } catch (error) {
-      alert("Failed to send message");
+      console.error("Failed to send message:", error);
     }
   };
 
@@ -144,7 +162,6 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
       );
 
       const tempMessage = {
-        _id: Date.now(),
         sender: user.id,
         receiver: selectedUser._id,
         fileUrl: response.data.fileUrl,
@@ -162,7 +179,7 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
         fileType: response.data.fileType,
       });
     } catch (error) {
-      alert("Failed to upload file");
+      console.error("Failed to upload file:", error);
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -172,14 +189,12 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
   return (
     <div className="fixed bottom-6 right-6 w-80 sm:w-96">
       <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-        {/* Chat Header */}
         <ChatHeader
           selectedUser={selectedUser}
           setSelectedUser={setSelectedUser}
           setOpenChat={setOpenChat}
         />
 
-        {/* Chat Content */}
         <div className="h-[500px] flex flex-col">
           {!selectedUser ? (
             <UserList
