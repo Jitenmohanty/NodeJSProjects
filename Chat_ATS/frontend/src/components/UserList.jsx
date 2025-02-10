@@ -1,6 +1,11 @@
-const UserList = ({ users, setSelectedUser, unreadMessages }) => {
+import { BotMessageSquare } from "lucide-react";
+
+const UserList = ({ users, setSelectedUser, unreadMessages,setSelectAi }) => {
+
+  
+
   return (
-    <div className="flex-1 overflow-y-auto bg-gray-50">
+    <div className="flex-1 relative overflow-y-auto bg-gray-50">
       {users && users.map(u => (
         <div 
           key={u._id} 
@@ -31,6 +36,15 @@ const UserList = ({ users, setSelectedUser, unreadMessages }) => {
           </div>
         </div>
       ))}
+     <div
+      onClick={()=>setSelectAi(prev =>!prev)}
+      className="absolute bottom-4 right-4 cursor-pointer p-2 rounded-full 
+                 bg-gradient-to-r from-blue-500 to-purple-500 shadow-lg 
+                 shadow-blue-500/50 text-white animate-pulse hover:scale-110 
+                 transition-transform duration-300"
+    >
+      <BotMessageSquare size={40} className="drop-shadow-lg" />
+    </div>
     </div>
   );
 };

@@ -17,6 +17,9 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
   const [uploading, setUploading] = useState(false);
   const messagesEndRef = useRef(null);
 
+  const [selectAi,setSelectAi] = useState(false);
+  // console.log(selectAi)
+
   // Fetch users on mount
   useEffect(() => {
     if(users.length === 0)
@@ -186,6 +189,23 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
     }
   };
 
+
+  // Handle AI Chat Selection
+  useEffect(() => {
+    if (selectAi) {
+      setMessages([
+        {
+          _id:233,
+          sender: "AI",
+          receiver: user.id,
+          text: "How can I help you?",
+          timestamp: new Date().toISOString(),
+          status: "sent",
+        },
+      ]);
+    }
+  }, [selectAi]);
+
   return (
     <div className="fixed bottom-6 right-6 w-80 sm:w-96">
       <div className="bg-white rounded-lg shadow-xl overflow-hidden">
@@ -196,11 +216,12 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
         />
 
         <div className="h-[500px] flex flex-col">
-          {!selectedUser ? (
+          {!selectedUser && !selectAi ? (
             <UserList
               users={users}
               setSelectedUser={setSelectedUser}
               unreadMessages={unreadMessages}
+              setSelectAi={setSelectAi}
             />
           ) : (
             <>
@@ -222,6 +243,8 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
               />
             </>
           )}
+
+          
         </div>
       </div>
     </div>
