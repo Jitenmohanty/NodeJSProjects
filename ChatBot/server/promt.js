@@ -1,14 +1,3 @@
-import express from "express";
-import mongoose from "mongoose";
-import dotenv from "dotenv";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-dotenv.config();
-
-const app = express();
-app.use(express.json());
-
-// System prompt definition
 const systemPrompt = `
 # 🏢 Applicant Tracking System (ATS) AI Assistant
 
@@ -126,74 +115,5 @@ Ensure all responses:
 
 Always adhere to this **professional, structured, and visually engaging** format in all responses.
 `;
-// Initialize Gemini with error handling
-if (!process.env.GEMINI_API_KEY) {
-  console.error("GEMINI_API_KEY is not set in .env file");
-  process.exit(1);
-}
 
-let genAI;
-try {
-  genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-} catch (error) {
-  console.error("Error initializing Gemini AI:", error);
-  process.exit(1);
-}
-
-// Database connection
-const dbConnect = async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log("DB connected successfully");
-  } catch (error) {
-    console.error("Error connecting to database:", error);
-    process.exit(1);
-  }
-};
-
-const messageSchema = new mongoose.Schema({
-  text: { type: String, required: true },
-  response: { type: String },
-  createdAt: { type: Date, default: Date.now },
-});
-
-const Message = mongoose.model("Message", messageSchema);
-
-app.post("/api/send", async (req, res) => {
-  try {
-    const { text } = req.body;
-
-    if (!text) {
-      return res.status(400).json({ error: "Text is required" });
-    }
-
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-    // Use system prompt in the API request
-    const result = await model.generateContent({
-      contents: [
-        { role: "model", parts: [{ text: systemPrompt }] }, // First provide the system context
-        { role: "user", parts: [{ text }] }, // Then the user's question
-      ],
-    });
-
-    const geminiResponse = result.response.text();
-
-    // Save to database
-    const newMessage = new Message({ text, response: geminiResponse });
-    await newMessage.save();
-
-    res.status(201).json({
-      message: "Response generated",
-      data: newMessage,
-    });
-  } catch (error) {
-    console.error("Error processing message:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-app.listen(8000, async () => {
-  await dbConnect();
-  console.log(`Server connected at port 8000`);
-});
+export default systemPrompt;
