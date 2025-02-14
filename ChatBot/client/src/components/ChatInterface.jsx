@@ -4,7 +4,7 @@ import axios from "axios";
 import ReactMarkdown from 'react-markdown';
 
 const ChatInterface = () => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isMinimized, setIsMinimized] = useState(false);

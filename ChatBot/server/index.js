@@ -2,198 +2,214 @@ import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import passport from "passport";
+import session from "express-session";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import cors from "cors";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use(cors({
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    credentials: true
+}));
 
-// System prompt definition
-const systemPrompt = `
-# 🏢 Applicant Tracking System (ATS) AI Assistant
+// Session configuration
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET || "your_secret_key",
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            secure: process.env.NODE_ENV === "production",
+            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        }
+    })
+);
 
-## 🔹 Overview  
-You are an AI assistant specialized in explaining an **Applicant Tracking System (ATS)**.  
-Your responses must follow a **structured and professional markdown format** with:  
-- **Clear role descriptions**  
-- **Responsibilities**  
-- **Best practices** for using an ATS  
+// Initialize passport
+app.use(passport.initialize());
+app.use(passport.session());
 
-## ✨ Formatting Guidelines  
+// User Schema
+const userSchema = new mongoose.Schema({
+    googleId: String,
+    displayName: String,
+    email: String,
+    image: String,
+    role: {
+        type: String,
+        enum: ['admin', 'bd', 'hr', 'recruiter'],
+        default: 'recruiter'
+    }
+}, { timestamps: true });
 
-1️⃣ **Headers & Structure**  
-   - Use emojis for **visual clarity** and **engagement**  
-   - Maintain a hierarchical **heading format** (\`#\`, \`##\`, \`###\`)  
+const User = mongoose.model("User", userSchema);
 
-2️⃣ **Lists & Points**  
-   - Use **bullet points** (\`-\`), **numbering** (\`1️⃣, 2️⃣\`), and **icons** (\`📌, 🔹, ✅\`) for clarity  
-   - Differentiate **main points** (🔹) and **sub-points** (🔸)  
+// Passport configuration
+passport.serializeUser((user, done) => {
+    done(null, user.id);
+});
 
-3️⃣ **Emphasis & Formatting**  
-   - **Bold** (\`**bold**\`) for key terms  
-   - *Italic* (\`*italic*\`) for emphasis  
-   - \`code\` (\`example\`) for technical terms  
+passport.deserializeUser(async (id, done) => {
+    try {
+        const user = await User.findById(id);
+        done(null, user);
+    } catch (err) {
+        done(err);
+    }
+});
 
----
+passport.use(
+    new GoogleStrategy(
+        {
+            clientID: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            callbackURL: "/auth/google/callback",
+            scope: ["profile", "email"]
+        },
+        async (accessToken, refreshToken, profile, done) => {
+            try {
+                const existingUser = await User.findOne({ googleId: profile.id });
+                if (existingUser) {
+                    return done(null, existingUser);
+                }
 
-# 🌟 User Roles & Responsibilities  
+                const newUser = await new User({
+                    googleId: profile.id,
+                    displayName: profile.displayName,
+                    email: profile.emails[0].value,
+                    image: profile.photos[0].value
+                }).save();
 
-## 🔷 Admin Role  
-- 🎯 **Access Level**: Full system access  
-- 📋 **Core Responsibilities**:  
-  1️⃣ **User Management**  
-     - 👥 Creating and managing user accounts  
-     - 🔑 Assigning roles and permissions  
-     - 📊 Monitoring user activities  
-  2️⃣ **System Configuration**  
-     - ⚙️ Setting up workflow automation  
-     - 📝 Customizing forms and templates  
-     - 🔄 Managing integration settings  
-  3️⃣ **Report Generation**  
-     - 📈 Creating performance analytics  
-     - 📊 Generating compliance reports  
-     - 📉 Tracking system usage metrics  
+                done(null, newUser);
+            } catch (err) {
+                done(err);
+            }
+        }
+    )
+);
 
----
-
-## 🔶 Business Developer (BD)  
-- 🎯 **Access Level**: BD-specific features  
-- 📋 **Core Responsibilities**:  
-  1️⃣ **Client Management**  
-     - 🤝 Identifying and acquiring new clients  
-     - 🌟 Building and maintaining client relationships  
-     - 🎯 Understanding client needs and providing solutions  
-  2️⃣ **Job Posting**  
-     - 📝 Creating and optimizing job descriptions  
-     - 🌐 Managing job board distributions  
-     - 📊 Tracking posting performance  
-  3️⃣ **Business Development**  
-     - 📈 Developing sales strategies  
-     - 🎯 Generating and converting leads  
-     - 🤝 Maintaining client satisfaction  
-
----
-
-## 🔷 HR Manager  
-- 🎯 **Access Level**: HR-related functionalities  
-- 📋 **Core Responsibilities**:  
-  1️⃣ **Employee Management**  
-     - 👥 Overseeing employee records in ATS  
-     - 📝 Managing internal job postings  
-     - 🤝 Coordinating with department heads  
-  2️⃣ **Recruitment Process**  
-     - 📊 Supervising recruitment workflows  
-     - ✅ Ensuring hiring compliance  
-     - 📋 Approving job offers  
-  3️⃣ **Policy Management**  
-     - 📜 Implementing HR policies  
-     - ⚖️ Ensuring regulatory compliance  
-     - 📋 Updating company guidelines  
-  4️⃣ **Employee Development**  
-     - 🎓 Managing onboarding processes  
-     - 🌟 Overseeing retention strategies  
-     - 📚 Coordinating training programs  
-
----
-
-## 🔶 Recruiter  
-- 🎯 **Access Level**: Candidate sourcing & screening  
-- 📋 **Core Responsibilities**:  
-  1️⃣ **Candidate Sourcing**  
-     - 🔍 Searching through **LinkedIn**, **Indeed**, and other **job portals**  
-     - 👥 Building and maintaining talent pools  
-     - 🤝 Engaging with passive candidates  
-  2️⃣ **Screening Process**  
-     - 📝 Reviewing resumes against **Job Descriptions (JDs)**  
-     - 📞 Conducting initial phone screenings  
-     - ✅ Evaluating technical skills and cultural fit  
-  3️⃣ **Interview Management**  
-     - 📅 Scheduling and conducting first interviews  
-     - 🤝 Coordinating with hiring managers  
-     - 📋 Providing candidate feedback  
-  4️⃣ **Candidate Processing**  
-     - 📧 Managing candidate communications  
-     - 📊 Updating candidate status in ATS  
-     - 📑 Preparing shortlist reports  
-
----
-
-## 🎯 Final Notes  
-Ensure all responses:  
-✔ Follow the **structured markdown format**  
-✔ Use **clear and concise explanations**  
-✔ Maintain **engagement with icons & styling**  
-
-Always adhere to this **professional, structured, and visually engaging** format in all responses.
-`;
-// Initialize Gemini with error handling
-if (!process.env.GEMINI_API_KEY) {
-  console.error("GEMINI_API_KEY is not set in .env file");
-  process.exit(1);
-}
-
-let genAI;
-try {
-  genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-} catch (error) {
-  console.error("Error initializing Gemini AI:", error);
-  process.exit(1);
-}
-
-// Database connection
-const dbConnect = async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log("DB connected successfully");
-  } catch (error) {
-    console.error("Error connecting to database:", error);
-    process.exit(1);
-  }
-};
-
+// Existing Message Schema
 const messageSchema = new mongoose.Schema({
-  text: { type: String, required: true },
-  response: { type: String },
-  createdAt: { type: Date, default: Date.now },
+    text: { type: String, required: true },
+    response: { type: String },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    createdAt: { type: Date, default: Date.now },
 });
 
 const Message = mongoose.model("Message", messageSchema);
 
-app.post("/api/send", async (req, res) => {
-  try {
-    const { text } = req.body;
-
-    if (!text) {
-      return res.status(400).json({ error: "Text is required" });
+// Authentication middleware
+const isAuthenticated = (req, res, next) => {
+    if (req.isAuthenticated()) {
+        return next();
     }
+    res.status(401).json({ error: "Not authenticated" });
+};
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+// Auth routes
+app.get("/auth/google",
+    passport.authenticate("google", { scope: ["profile", "email"] })
+);
 
-    // Use system prompt in the API request
-    const result = await model.generateContent({
-      contents: [
-        { role: "model", parts: [{ text: systemPrompt }] }, // First provide the system context
-        { role: "user", parts: [{ text }] }, // Then the user's question
-      ],
+app.get("/auth/google/callback",
+    passport.authenticate("google", {
+        successRedirect: process.env.CLIENT_URL || "http://localhost:5173/dashboard",
+        failureRedirect: process.env.CLIENT_URL || "http://localhost:5173/login"
+    })
+);
+
+app.get("/auth/user", (req, res) => {
+    res.json(req.user || null);
+});
+
+app.get("/auth/logout", (req, res) => {
+    req.logout((err) => {
+        if (err) {
+            return res.status(500).json({ error: "Error logging out" });
+        }
+        res.redirect(process.env.CLIENT_URL || "http://localhost:5173");
     });
+});
 
-    const geminiResponse = result.response.text();
+// Initialize Gemini with error handling
+if (!process.env.GEMINI_API_KEY) {
+    console.error("GEMINI_API_KEY is not set in .env file");
+    process.exit(1);
+}
 
-    // Save to database
-    const newMessage = new Message({ text, response: geminiResponse });
-    await newMessage.save();
+let genAI;
+try {
+    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+} catch (error) {
+    console.error("Error initializing Gemini AI:", error);
+    process.exit(1);
+}
 
-    res.status(201).json({
-      message: "Response generated",
-      data: newMessage,
-    });
-  } catch (error) {
-    console.error("Error processing message:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
+// Database connection
+const dbConnect = async () => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI);
+        console.log("DB connected successfully");
+    } catch (error) {
+        console.error("Error connecting to database:", error);
+        process.exit(1);
+    }
+};
+
+// Updated API route with authentication
+app.post("/api/send", async (req, res) => {
+    try {
+        const { text } = req.body;
+
+        if (!text) {
+            return res.status(400).json({ error: "Text is required" });
+        }
+
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+        const result = await model.generateContent({
+            contents: [
+                { role: "model", parts: [{ text: systemPrompt }] },
+                { role: "user", parts: [{ text }] },
+            ],
+        });
+
+        const geminiResponse = result.response.text();
+
+        // Save to database with user reference
+        const newMessage = new Message({
+            text,
+            response: geminiResponse,
+            userId: req.user._id
+        });
+        await newMessage.save();
+
+        res.status(201).json({
+            message: "Response generated",
+            data: newMessage,
+        });
+    } catch (error) {
+        console.error("Error processing message:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+// Get user's message history
+app.get("/api/messages", async (req, res) => {
+    try {
+        const messages = await Message.find({ userId: req.user._id })
+            .sort({ createdAt: -1 });
+        res.json(messages);
+    } catch (error) {
+        res.status(500).json({ error: "Error fetching messages" });
+    }
 });
 
 app.listen(8000, async () => {
-  await dbConnect();
-  console.log(`Server connected at port 8000`);
+    await dbConnect();
+    console.log(`Server connected at port 8000`);
 });
