@@ -6,14 +6,18 @@ import passport from "passport";
 import session from "express-session";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import cors from "cors";
+import systemPrompt from "./promt.js";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+// Update CORS configuration to be more specific
 app.use(cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    credentials: true
+    origin: "http://localhost:5173",  // Be explicit about the origin
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Session configuration
@@ -24,7 +28,9 @@ app.use(
         saveUninitialized: false,
         cookie: {
             secure: process.env.NODE_ENV === "production",
-            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+            maxAge: 24 * 60 * 60 * 1000, // 24 hours
+            sameSite: 'lax',  // Add this
+            httpOnly: true    // Add this
         }
     })
 );
@@ -161,7 +167,7 @@ const dbConnect = async () => {
 };
 
 // Updated API route with authentication
-app.post("/api/send", async (req, res) => {
+app.post("/api/send",isAuthenticated, async (req, res) => {
     try {
         const { text } = req.body;
 
@@ -199,7 +205,7 @@ app.post("/api/send", async (req, res) => {
 });
 
 // Get user's message history
-app.get("/api/messages", async (req, res) => {
+app.get("/api/messages",isAuthenticated, async (req, res) => {
     try {
         const messages = await Message.find({ userId: req.user._id })
             .sort({ createdAt: -1 });

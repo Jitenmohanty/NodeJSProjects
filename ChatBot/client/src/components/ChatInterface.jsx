@@ -133,7 +133,7 @@ const ChatInterface = () => {
                 {loading && (
                   <div className="flex justify-start animate-pulse">
                     <Loader2 className="w-5 h-5 animate-spin text-gray-600" />
-                    <p className="text-sm ml-2">AI is typing...</p>
+                    <p className="text-sm ml-2 text-black">AI is typing...</p>
                   </div>
                 )}
                 <div ref={messagesEndRef} />

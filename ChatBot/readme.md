@@ -8,6 +8,8 @@
 - 🔹 Built using **MongoDB, Express.js, React.js, and Node.js**
 - 🔹 User-friendly interface for easy interaction
 - 🔹 Scalable and efficient backend
+- 🔹 **Google OAuth 2.0 authentication** for secure user login
+- 🔹 **Passport.js integration** for handling authentication and sessions
 
 ## 🛠️ Tech Stack
 - **Frontend**: React.js
@@ -15,6 +17,7 @@
 - **Database**: MongoDB
 - **AI Integration**: Gemini API
 - **State Management**: Redux (if applicable)
+- **Authentication**: Google OAuth 2.0 with Passport.js
 
 ## 🚀 Installation & Setup
 
@@ -43,7 +46,10 @@ Create a `.env` file in the backend directory and add the required environment v
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
 GEMINI_API_KEY=your_gemini_api_key
-```
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+SESSION_SECRET=your_session_secret
+``` 
 
 ### 4️⃣ Run the Application
 #### Start Backend Server
@@ -61,6 +67,7 @@ GEMINI_API_KEY=your_gemini_api_key
 - Interact with the chatbot by asking **ATS-related** queries.
 - The chatbot will provide **accurate responses** based on **Gemini API**.
 - Ideal for **job seekers, recruiters, and HR professionals** to understand ATS better.
+- **Login using Google OAuth 2.0** for a personalized experience.
 
 ## 🛠️ Future Enhancements
 - ✅ Add authentication & user management

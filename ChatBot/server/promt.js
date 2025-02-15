@@ -1,4 +1,4 @@
-const systemPrompt = `
+ const systemPrompt = `
 # 🏢 Applicant Tracking System (ATS) AI Assistant
 
 ## 🔹 Overview  
