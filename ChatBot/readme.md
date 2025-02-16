@@ -80,5 +80,7 @@ Feel free to fork the repo, create a feature branch, and submit a pull request. 
 ## 📄 License
 This project is **open-source** and available under the **MIT License**.
 
+## Dark mode and Light mode functionality
+This project has darkMode and lightMode functionality **Cool Effects**
 ---
 🔗 **GitHub Repository**: [ChatB on GitHub](https://github.com/Jitenmohanty/NodeJSProjects/tree/master/ChatB)
