@@ -13,17 +13,18 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const [selectAi,setSelectAi] = useState(false);
+  const [selectAi, setSelectAi] = useState(false);
   // console.log(selectAi)
 
   // Fetch users on mount
   useEffect(() => {
-    if(users.length === 0)
-    fetchUsers();
+    if (users.length === 0) fetchUsers();
   }, []);
 
   // Handle socket events
@@ -80,29 +81,53 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
     };
   }, [socket, selectedUser, user]);
 
-  // Fetch messages when selected user changes
+  const fetchMessages = async () => {
+    if (!selectedUser || !hasMore) return; // Stop if no more messages to load
+    setLoading(true);
+
+    try {
+      const response = await axios.get(
+        `http://localhost:3000/messages/${selectedUser._id}`,
+        {
+          params: { page, limit: 20 }, // Request paginated messages
+        }
+      );
+
+      if (response.data.length < 20) setHasMore(false); // No more messages to load
+
+      setMessages((prev) => [...response.data, ...prev]); // Append older messages at the top
+      setPage((prev) => prev + 1); // Increase page number for next fetch
+
+      // Mark messages as read if they are unread and from the selected user
+      response.data.forEach((msg) => {
+        if (msg.sender === selectedUser._id && !msg.readAt) {
+          markMessageAsRead(msg._id, msg.sender);
+        }
+      });
+    } catch (error) {
+      console.error("Failed to fetch messages:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reset messages when the selected user changes
   useEffect(() => {
-    const fetchMessages = async () => {
-      if (!selectedUser) return;
-      setLoading(true);
-      try {
-        const response = await axios.get(
-          `http://localhost:3000/messages/${selectedUser._id}`
-        );
-        setMessages(response.data);
-        response.data.forEach((msg) => {
-          if (msg.sender === selectedUser._id && !msg.readAt) {
-            markMessageAsRead(msg._id, msg.sender);
-          }
-        });
-      } catch (error) {
-        console.error("Failed to fetch messages:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMessages();
+    if (selectedUser) {
+      setMessages([]);
+      setPage(1);
+      setHasMore(true);
+      fetchMessages(); // Fetch initial messages
+    }
   }, [selectedUser]);
+
+  // Load more messages when scrolling to the top
+  const handleScroll = (event) => {
+    if (event.target.scrollTop === 0 && hasMore && !loading) {
+      fetchMessages(); // Fetch more messages
+    }
+  };
+
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -189,13 +214,12 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
     }
   };
 
-
   // Handle AI Chat Selection
   useEffect(() => {
     if (selectAi) {
       setMessages([
         {
-          _id:233,
+          _id: 233,
           sender: "AI",
           receiver: user.id,
           text: "How can I help you?",
@@ -207,8 +231,8 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
   }, [selectAi]);
 
   return (
-    <div className="fixed bottom-6 right-6 w-80 sm:w-96">
-      <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+    <div className="fixed bottom-2 right-6 w-80 sm:w-96">
+      <div className="bg-gray-900 rounded-lg shadow-xl overflow-hidden">
         <ChatHeader
           selectedUser={selectedUser}
           setSelectedUser={setSelectedUser}
@@ -225,15 +249,19 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
             />
           ) : (
             <>
-              <ChatWindow
-                messages={messages}
-                loading={loading}
-                user={user}
-                messagesEndRef={messagesEndRef}
-                selectedUser={selectedUser}
-                setSelectedUser={setSelectedUser}
-              />
+              {/* Chat Messages Window */}
+              <div className="flex-1 overflow-y-auto" onScroll={handleScroll}>
+                <ChatWindow
+                  messages={messages}
+                  loading={loading}
+                  user={user}
+                  messagesEndRef={messagesEndRef}
+                  selectedUser={selectedUser}
+                  setSelectedUser={setSelectedUser}
+                />
+              </div>
 
+              {/* Message Input Box */}
               <MessageInput
                 message={message}
                 setMessage={setMessage}
@@ -243,8 +271,6 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
               />
             </>
           )}
-
-          
         </div>
       </div>
     </div>

@@ -1,6 +1,11 @@
 import { Check, FileIcon, FileText, Image as ImageIcon } from "lucide-react";
+import { useTheme } from "../context/ThemeContex";
 
 const ChatWindow = ({ messages, loading, user, messagesEndRef }) => {
+  const { darkMode } = useTheme();
+
+  // console.log(messages,"messages");
+
   const formatTime = (timestamp) => {
     return new Date(timestamp).toLocaleTimeString("en-US", {
       hour: "2-digit",
@@ -14,15 +19,15 @@ const ChatWindow = ({ messages, loading, user, messagesEndRef }) => {
     } else if (status === "delivered") {
       return (
         <div className="flex">
-          <Check className="h-3 w-3 text-gray-400" />
-          <Check className="h-3 w-3 -ml-1 text-gray-400" />
+          <Check className="h-3 w-3 text-gray-200" />
+          <Check className="h-3 w-3 -ml-2 mt-0.5  text-gray-200" />
         </div>
       );
-    } else if (readAt) {
+    } else if (status === "read") {
       return (
         <div className="flex">
-          <Check className="h-3 w-3 text-blue-500" />
-          <Check className="h-3 w-3 -ml-1 text-blue-500" />
+          <Check className="h-3 w-3 text-gray-800" />
+          <Check className="h-3 w-3 -ml-1 text-gray-800" />
         </div>
       );
     }
@@ -31,7 +36,6 @@ const ChatWindow = ({ messages, loading, user, messagesEndRef }) => {
 
   const FilePreview = ({ fileUrl, fileName, fileType }) => {
     if (fileType.startsWith("image/")) {
-      // 🖼 Image Preview
       return (
         <div className="relative group">
           <img
@@ -46,11 +50,10 @@ const ChatWindow = ({ messages, loading, user, messagesEndRef }) => {
         </div>
       );
     } else if (fileType.includes("pdf")) {
-      // 📄 PDF Preview
       return (
-        <div className="bg-gray-100 p-2 rounded-lg flex flex-col items-center">
+        <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-lg flex flex-col items-center">
           <FileText className="w-8 h-8 text-red-500" />
-          <p className="text-sm truncate max-w-[150px]">{fileName}</p>
+          <p className="text-sm truncate max-w-[150px] text-gray-800 dark:text-gray-200">{fileName}</p>
           <a
             href={fileUrl}
             target="_blank"
@@ -62,7 +65,6 @@ const ChatWindow = ({ messages, loading, user, messagesEndRef }) => {
         </div>
       );
     } else {
-      // 📂 Other Files
       return (
         <div className="flex items-center gap-2 cursor-pointer hover:bg-opacity-80">
           <FileIcon className="w-8 h-8 text-blue-500" />
@@ -80,7 +82,7 @@ const ChatWindow = ({ messages, loading, user, messagesEndRef }) => {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+    <div className={`flex-1 overflow-y-auto p-4 ${darkMode ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-900"}`}>
       {loading ? (
         <div className="flex items-center justify-center h-full">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -96,12 +98,10 @@ const ChatWindow = ({ messages, loading, user, messagesEndRef }) => {
                 className={`max-w-[80%] rounded-lg p-3 ${
                   msg.sender === user.id
                     ? "bg-blue-500 text-white rounded-br-none"
-                    : "bg-gray-200 text-gray-800 rounded-bl-none"
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none"
                 }`}
               >
                 {msg.text && <p className="text-sm mb-2">{msg.text}</p>}
-
-                {/* Show File Preview */}
                 {msg.fileUrl && (
                   <div className="mb-2">
                     <FilePreview
@@ -111,9 +111,8 @@ const ChatWindow = ({ messages, loading, user, messagesEndRef }) => {
                     />
                   </div>
                 )}
-
                 <div className="flex items-center justify-end gap-1 mt-1">
-                  <p className={`text-xs ${msg.sender === user.id ? "text-blue-100" : "text-gray-500"}`}>
+                  <p className={`text-xs ${msg.sender === user.id ? "text-blue-100" : "text-gray-500 dark:text-gray-400"}`}>
                     {formatTime(msg.timestamp)}
                   </p>
                   {msg.sender === user.id && <MessageStatus status={msg.status} readAt={msg.readAt} />}

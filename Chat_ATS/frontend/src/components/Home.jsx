@@ -2,11 +2,39 @@ import React, { useState, useEffect } from "react";
 import { MessageCircle } from "lucide-react";
 import ChatInterface from "./ChatInterface";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContex";
+import axios from "axios";
 
 const Home = () => {
   const [openChat, setOpenChat] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState({});
   const { user, socket, fetchUsers, setUsers } = useAuth();
+
+  const { darkMode } = useTheme();
+
+  useEffect(() => {
+    const fetchUnreadmessage = async () => {
+      try {
+        const { data } = await axios.get("http://localhost:3000/unread");
+        
+        if (data.length > 0) {
+          const unreadCount = {};
+
+          data.forEach((msg) => {
+            unreadCount[msg.sender] = (unreadCount[msg.sender] || 0) + 1;
+          });
+
+          setUnreadMessages(unreadCount); // Set unread messages state
+        } else {
+          setUnreadMessages({});
+        }
+        // console.log(data)
+      } catch (error) {
+        console.log(error.message);
+      }
+    };
+    fetchUnreadmessage();
+  }, []);
 
   // Handle socket events for messages and user status
   useEffect(() => {
@@ -76,8 +104,18 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
-      <h1 className="text-4xl font-bold text-gray-800 mb-4">
+    <div
+      className={`min-h-auto ${
+        darkMode
+          ? "bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900"
+          : "bg-gradient-to-r from-blue-100 via-white to-blue-100"
+      } transition-colors duration-200 mt-[6vw]`}
+    >
+      <h1
+        className={`text-4xl font-bold ${
+          darkMode ? "text-gray-100" : "text-gray-800"
+        } mb-4`}
+      >
         Welcome to Chat App
       </h1>
 
