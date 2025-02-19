@@ -6,10 +6,17 @@ import ChatHeader from "./ChatHeader";
 import ChatWindow from "./ChatWindow";
 import MessageInput from "./MessageInput";
 import UserList from "./UserList";
+import { useTheme } from "../context/ThemeContex";
+import GroupList from "./GroupList";
+import CreateGroupModal from "./CreateGroupModal";
+import GroupChatInterface from "./GroupChatInterface";
 
 const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
   const { user, fetchUsers, users, setUsers } = useAuth();
-  const { socket, sendMessage, markMessageAsRead } = useSocket(user?.id);
+  const { socket, sendMessage, markMessageAsRead } = useSocket(
+    user?.id,
+    setUsers
+  );
   const [selectedUser, setSelectedUser] = useState(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
@@ -17,10 +24,17 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [scrollTop, setScrollTop] = useState(false);
   const messagesEndRef = useRef(null);
 
+  // Group chat state
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState(null);
+
+  const { darkMode } = useTheme();
   const [selectAi, setSelectAi] = useState(false);
-  // console.log(selectAi)
+
+  console.log(selectedGroup);
 
   // Fetch users on mount
   useEffect(() => {
@@ -82,23 +96,21 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
   }, [socket, selectedUser, user]);
 
   const fetchMessages = async () => {
-    if (!selectedUser || !hasMore) return; // Stop if no more messages to load
+    if (!selectedUser || !hasMore) return;
     setLoading(true);
 
     try {
       const response = await axios.get(
         `http://localhost:3000/messages/${selectedUser._id}`,
         {
-          params: { page, limit: 20 }, // Request paginated messages
+          params: { page, limit: 20 },
         }
       );
 
-      if (response.data.length < 20) setHasMore(false); // No more messages to load
+      if (response.data.length < 20) setHasMore(false);
+      setMessages((prev) => [...response.data, ...prev]);
+      setPage((prev) => prev + 1);
 
-      setMessages((prev) => [...response.data, ...prev]); // Append older messages at the top
-      setPage((prev) => prev + 1); // Increase page number for next fetch
-
-      // Mark messages as read if they are unread and from the selected user
       response.data.forEach((msg) => {
         if (msg.sender === selectedUser._id && !msg.readAt) {
           markMessageAsRead(msg._id, msg.sender);
@@ -117,21 +129,22 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
       setMessages([]);
       setPage(1);
       setHasMore(true);
-      fetchMessages(); // Fetch initial messages
+      fetchMessages();
     }
   }, [selectedUser]);
 
   // Load more messages when scrolling to the top
   const handleScroll = (event) => {
     if (event.target.scrollTop === 0 && hasMore && !loading) {
-      fetchMessages(); // Fetch more messages
+      setScrollTop(true);
+      fetchMessages();
     }
   };
 
-
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!scrollTop)
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   // Clear unread messages when selecting a user
@@ -230,9 +243,23 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
     }
   }, [selectAi]);
 
+  const openGroupModal = () => {
+    console.log("Opening group modal");
+    setIsGroupModalOpen(true);
+  };
+
+  const closeGroupModal = () => {
+    console.log("Closing group modal");
+    setIsGroupModalOpen(false);
+  };
+
   return (
     <div className="fixed bottom-2 right-6 w-80 sm:w-96">
-      <div className="bg-gray-900 rounded-lg shadow-xl overflow-hidden">
+      <div
+        className={`${
+          darkMode ? "bg-gray-900" : "bg-white"
+        } rounded-lg shadow-xl overflow-hidden`}
+      >
         <ChatHeader
           selectedUser={selectedUser}
           setSelectedUser={setSelectedUser}
@@ -241,25 +268,42 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
 
         <div className="h-[500px] flex flex-col">
           {!selectedUser && !selectAi ? (
-            <UserList
-              users={users}
-              setSelectedUser={setSelectedUser}
-              unreadMessages={unreadMessages}
-              setSelectAi={setSelectAi}
-            />
+            <>
+              <UserList
+                users={users}
+                setSelectedUser={setSelectedUser}
+                unreadMessages={unreadMessages}
+                setSelectAi={setSelectAi}
+              />
+              <GroupList
+                setSelectedGroup={setSelectedGroup}
+                unreadMessages={unreadMessages}
+              />
+              <button
+                onClick={openGroupModal}
+                className="w-full p-2 text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+              >
+                Create New Group
+              </button>
+            </>
           ) : (
             <>
               {/* Chat Messages Window */}
-              <div className="flex-1 overflow-y-auto" onScroll={handleScroll}>
-                <ChatWindow
-                  messages={messages}
-                  loading={loading}
-                  user={user}
-                  messagesEndRef={messagesEndRef}
-                  selectedUser={selectedUser}
-                  setSelectedUser={setSelectedUser}
-                />
-              </div>
+              {!selectedGroup ? (
+                <div className="flex-1 overflow-y-auto" onScroll={handleScroll}>
+                  <ChatWindow
+                    messages={messages}
+                    loading={loading}
+                    user={user}
+                    messagesEndRef={messagesEndRef}
+                    selectedUser={selectedUser}
+                    setSelectedUser={setSelectedUser}
+                    scrollTop={scrollTop}
+                  />
+                </div>
+              ) : (
+                <GroupChatInterface group={selectedGroup}/>
+              )}
 
               {/* Message Input Box */}
               <MessageInput
@@ -273,6 +317,9 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
           )}
         </div>
       </div>
+
+      {/* Pass correct props to CreateGroupModal */}
+      <CreateGroupModal isOpen={isGroupModalOpen} onClose={closeGroupModal} />
     </div>
   );
 };

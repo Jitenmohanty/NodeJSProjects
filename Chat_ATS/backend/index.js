@@ -1,111 +1,77 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const http = require('http');
-const { Server } = require('socket.io');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import http from "http";
+import { Server } from "socket.io";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import dotenv from "dotenv";
+import { User } from "./models/userSchema.js";
+import { Message } from "./models/messageSchema.js";
+import { register, Login, getUsers } from "./controllers/userController.js";
+import { uploadFile, fileFilter } from "./middleware/fileUploadMiddleware.js";
+import {
+  getMessageById,
+  getUnreadMessage,
+} from "./controllers/messageController.js";
 
-require('dotenv').config();
+// Load environment variables
+dotenv.config();
+
+// Resolve __dirname in ES Modules
+import { fileURLToPath } from "url";
+import { GroupMessage } from "./models/groupMessageSchema.js";
+import { Group } from "./models/groupSchema.js";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:5173",
-    methods: ["GET", "POST"]
-  }
+    methods: ["GET", "POST"],
+  },
 });
 
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
+app.use("/uploads", express.static("uploads"));
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = 'uploads';
+    const dir = "uploads";
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir);
     }
     cb(null, dir);
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
+    cb(null, Date.now() + "-" + file.originalname);
+  },
 });
-
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = [
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-  ];
-  
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Invalid file type'), false);
-  }
-};
 
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  }
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
 });
 
 // MongoDB connection
 mongoose.connect(`${process.env.MONGODB_URI}`);
 
-// MongoDB Schemas
-const userSchema = new mongoose.Schema({
-  name: String,
-  email: { type: String, unique: true },
-  password: String,
-  online: { type: Boolean, default: false }
-});
-
-const messageSchema = new mongoose.Schema({
-  sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  text: String,
-  fileUrl: String,
-  fileName: String,
-  fileType: String,
-  timestamp: { type: Date, default: Date.now },
-  status: { type: String, enum: ['sent', 'delivered', 'read'], default: 'sent' },
-  readAt: { type: Date, default: null }
-});
-
-const User = mongoose.model('User', userSchema);
-const Message = mongoose.model('Message', messageSchema);
-
 // File upload route
-app.post('/upload', upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
-  }
-  
-  const fileUrl = `http://localhost:3000/uploads/${req.file.filename}`;
-  res.json({
-    fileUrl,
-    fileName: req.file.originalname,
-    fileType: req.file.mimetype
-  });
-});
+app.post("/upload", upload.single("file"), uploadFile);
 
 // Authentication Middleware
 const authenticateToken = (req, res, next) => {
-  const token = req.headers['authorization']?.split(' ')[1];
+  const token = req.headers["authorization"]?.split(" ")[1];
   if (!token) return res.sendStatus(401);
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
@@ -116,208 +82,228 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Auth Routes
-app.post('/register', async (req, res) => {
+app.post("/register", register);
+
+app.post("/login", Login);
+
+app.get("/validate-token", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ name, email, password: hashedPassword });
-    await user.save();
-    res.status(201).json({ message: 'User created successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Error creating user' });
-  }
-});
-
-app.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ error: 'User not found' });
-
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return res.status(400).json({ error: 'Invalid password' });
-
-    // Update user's online status on login
-    await User.findByIdAndUpdate(user._id, { online: true });
-
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
-  } catch (error) {
-    res.status(500).json({ error: 'Error logging in' });
-  }
-});
-
-app.get('/validate-token', async (req, res) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
+    const token = req.headers.authorization?.split(" ")[1];
     if (!token) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
-    
+
     // Update user's online status on token validation
     if (user) {
       await User.findByIdAndUpdate(decoded.id, { online: true });
-      io.emit('user_status_change', { userId: decoded.id, online: true });
+      io.emit("user_status_change", { userId: decoded.id, online: true });
     }
-    
+
     res.json({ user: { id: decoded.id } });
   } catch (error) {
-    res.status(401).json({ error: 'Invalid or expired token' });
+    res.status(401).json({ error: "Invalid or expired token" });
   }
 });
 
 // Chat Routes
-app.get('/users', authenticateToken, async (req, res) => {
+app.get("/users", authenticateToken, getUsers);
+
+app.get("/messages/:userId", authenticateToken, getMessageById);
+
+app.get("/unread", authenticateToken, getUnreadMessage);
+
+// Add these new routes after your existing routes
+// Group Management Routes
+app.post("/groups", authenticateToken, async (req, res) => {
   try {
-    const users = await User.find({ _id: { $ne: req.user.id } })
-      .select('-password');
-    res.json(users);
+    const { name, description, members } = req.body;
+    const group = new Group({
+      name,
+      description,
+      creator: req.user.id,
+      members: [...new Set([req.user.id, ...members])], // Ensure unique members
+      admins: [req.user.id],
+    });
+    await group.save();
+    res.status(201).json(group);
   } catch (error) {
-    res.status(500).json({ error: 'Error fetching users' });
+    res.status(500).json({ error: "Error creating group" });
   }
 });
 
-app.get('/messages/:userId', authenticateToken, async (req, res) => {
+app.get("/groups", authenticateToken, async (req, res) => {
   try {
-    const { page = 1, limit = 20 } = req.query; // Default to first page, 20 messages per request
-    const skip = (page - 1) * limit; // Calculate how many messages to skip
-
-    const messages = await Message.find({
-      $or: [
-        { sender: req.user.id, receiver: req.params.userId },
-        { sender: req.params.userId, receiver: req.user.id }
-      ]
+    const groups = await Group.find({
+      members: req.user.id,
     })
-    .sort({ timestamp: -1 }) // Sort by latest messages first
-    .skip(skip)
-    .limit(parseInt(limit)); // Convert limit to a number
-
-    res.json(messages.reverse()); // Reverse to show oldest at the top
+      .populate("members", "name email online")
+      .populate("admins", "name email");
+    res.json(groups);
   } catch (error) {
-    console.error("Error fetching messages:", error);
-    res.status(500).json({ error: 'Error fetching messages' });
+    res.status(500).json({ error: "Error fetching groups" });
   }
 });
 
-
-app.get("/unread", authenticateToken, async (req, res) => {
+app.put("/groups/:groupId", authenticateToken, async (req, res) => {
   try {
+    const group = await Group.findById(req.params.groupId);
+    if (!group.admins.includes(req.user.id)) {
+      return res.status(403).json({ error: "Not authorized" });
+    }
 
-    let filter = {
-      receiver: req.user?.id, 
-      status: { $in: ["delivered", "sent"] },
-    };
-
-    const unreadMessages = await Message.find(filter)
-    .select("sender text timestamp")
-
-    res.json(unreadMessages);
+    const { name, description, members, admins } = req.body;
+    const updatedGroup = await Group.findByIdAndUpdate(
+      req.params.groupId,
+      { name, description, members, admins },
+      { new: true }
+    );
+    res.json(updatedGroup);
   } catch (error) {
-    console.error("Error fetching unread messages:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: "Error updating group" });
   }
 });
 
+app.delete("/groups/:groupId", authenticateToken, async (req, res) => {
+  try {
+    const group = await Group.findById(req.params.groupId);
+    if (!group.admins.includes(req.user.id)) {
+      return res.status(403).json({ error: "Not authorized" });
+    }
+
+    await Group.findByIdAndDelete(req.params.groupId);
+    await GroupMessage.deleteMany({ group: req.params.groupId });
+    res.json({ message: "Group deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Error deleting group" });
+  }
+});
+
+// Group Messages Routes
+app.get("/groups/:groupId/messages", authenticateToken, async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const skip = (page - 1) * limit;
+
+    const group = await Group.findById(req.params.groupId);
+    if (!group.members.includes(req.user.id)) {
+      return res.status(403).json({ error: "Not a member of this group" });
+    }
+
+    const messages = await GroupMessage.find({ group: req.params.groupId })
+      .sort({ timestamp: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .populate("sender", "name email");
+
+    res.json(messages.reverse());
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching group messages" });
+  }
+});
 
 // Socket.io Setup
 const connectedUsers = new Map();
 
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
 
-  socket.on('user_connected', async (userId) => {
+  socket.on("user_connected", async (userId) => {
     try {
       connectedUsers.set(userId, socket.id);
       await User.findByIdAndUpdate(userId, { online: true });
-      io.emit('user_status_change', { userId, online: true });
-      
+      io.emit("user_status_change", { userId, online: true });
+
       // Fetch and broadcast current online status of all users
-      const users = await User.find({}).select('_id online');
-      io.emit('users_status_update', users);
+      const users = await User.find({}).select("_id online");
+      io.emit("users_status_update", users);
     } catch (error) {
-      console.error('Error updating user status:', error);
+      console.error("Error updating user status:", error);
     }
   });
 
-  socket.on('send_message', async (data) => {
+  socket.on("send_message", async (data) => {
     try {
       const { senderId, receiverId, text, fileUrl, fileName, fileType } = data;
-      
+
       // Create and save the message without specifying _id
       const message = new Message({
         sender: senderId,
         receiver: receiverId,
-        text: text || '',
+        text: text || "",
         fileUrl,
         fileName,
         fileType,
-        status: 'sent'
+        status: "sent",
       });
-      
+
       await message.save();
       // console.log('Message saved:', message);
 
       // Send to receiver if online
       const receiverSocketId = connectedUsers.get(receiverId);
       if (receiverSocketId) {
-        const sender = await User.findById(senderId).select('name');
-        io.to(receiverSocketId).emit('receive_message', {
+        const sender = await User.findById(senderId).select("name");
+        io.to(receiverSocketId).emit("receive_message", {
           message,
-          sender
+          sender,
         });
-        
+
         // Update message status to delivered
-        message.status = 'delivered';
+        message.status = "delivered";
         await message.save();
-        
+
         // Notify sender about delivery
-        io.to(connectedUsers.get(senderId)).emit('message_status_update', {
+        io.to(connectedUsers.get(senderId)).emit("message_status_update", {
           messageId: message._id,
-          status: 'delivered'
+          status: "delivered",
         });
       }
     } catch (error) {
-      console.error('Error sending message:', error);
-      socket.emit('message_error', { error: 'Failed to send message' });
+      console.error("Error sending message:", error);
+      socket.emit("message_error", { error: "Failed to send message" });
     }
   });
 
-  socket.on('message_read', async ({ messageId, readBy, senderId }) => {
+  socket.on("message_read", async ({ messageId, readBy, senderId }) => {
     try {
       const message = await Message.findById(messageId);
-      if (message && message.sender.toString() === senderId && !message.readAt) {
-        message.status = 'read';
+      if (
+        message &&
+        message.sender.toString() === senderId &&
+        !message.readAt
+      ) {
+        message.status = "read";
         message.readAt = new Date();
         await message.save();
-        
+
         const senderSocketId = connectedUsers.get(senderId);
         if (senderSocketId) {
-          io.to(senderSocketId).emit('message_status_update', {
+          io.to(senderSocketId).emit("message_status_update", {
             messageId,
-            status: 'read',
-            readAt: message.readAt
+            status: "read",
+            readAt: message.readAt,
           });
         }
       }
     } catch (error) {
-      console.error('Error marking message as read:', error);
+      console.error("Error marking message as read:", error);
     }
   });
 
-  socket.on('user_disconnected', async (userId) => {
+  socket.on("user_disconnected", async (userId) => {
     try {
       connectedUsers.delete(userId);
       await User.findByIdAndUpdate(userId, { online: false });
-      io.emit('user_status_change', { userId, online: false });
+      io.emit("user_status_change", { userId, online: false });
     } catch (error) {
-      console.error('Error updating user status:', error);
+      console.error("Error updating user status:", error);
     }
   });
 
-  socket.on('disconnect', async () => {
+  socket.on("disconnect", async () => {
     try {
       let disconnectedUserId = null;
       for (const [userId, socketId] of connectedUsers.entries()) {
@@ -330,10 +316,75 @@ io.on('connection', (socket) => {
 
       if (disconnectedUserId) {
         await User.findByIdAndUpdate(disconnectedUserId, { online: false });
-        io.emit('user_status_change', { userId: disconnectedUserId, online: false });
+        io.emit("user_status_change", {
+          userId: disconnectedUserId,
+          online: false,
+        });
       }
     } catch (error) {
-      console.error('Error handling disconnect:', error);
+      console.error("Error handling disconnect:", error);
+    }
+  });
+  // Add these socket.io handlers in your existing io.on('connection') block
+  socket.on("join_group", (groupId) => {
+    socket.join(`group:${groupId}`);
+  });
+
+  socket.on("leave_group", (groupId) => {
+    socket.leave(`group:${groupId}`);
+  });
+
+  socket.on("send_group_message", async (data) => {
+    try {
+      const { groupId, senderId, text, fileUrl, fileName, fileType } = data;
+
+      const group = await Group.findById(groupId);
+      if (!group.members.includes(senderId)) {
+        throw new Error("Not a member of this group");
+      }
+
+      const message = new GroupMessage({
+        group: groupId,
+        sender: senderId,
+        text: text || "",
+        fileUrl,
+        fileName,
+        fileType,
+        readBy: [{ user: senderId }], // Mark as read by sender
+      });
+
+      await message.save();
+
+      const populatedMessage = await GroupMessage.findById(
+        message._id
+      ).populate("sender", "name email");
+
+      io.to(`group:${groupId}`).emit("receive_group_message", {
+        message: populatedMessage,
+      });
+    } catch (error) {
+      console.error("Error sending group message:", error);
+      socket.emit("group_message_error", { error: "Failed to send message" });
+    }
+  });
+
+  socket.on("group_message_read", async ({ messageId, userId, groupId }) => {
+    try {
+      const message = await GroupMessage.findById(messageId);
+      if (
+        message &&
+        !message.readBy.some((read) => read.user.toString() === userId)
+      ) {
+        message.readBy.push({ user: userId });
+        await message.save();
+
+        io.to(`group:${groupId}`).emit("group_message_status_update", {
+          messageId,
+          readBy: message.readBy,
+        });
+      }
+    } catch (error) {
+      console.error("Error marking group message as read:", error);
     }
   });
 });

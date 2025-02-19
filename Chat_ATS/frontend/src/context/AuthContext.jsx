@@ -1,6 +1,7 @@
+// AuthContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
-import io from 'socket.io-client';
+import useSocket from '../hooks/useSocket';
 
 const AuthContext = createContext(null);
 
@@ -8,54 +9,9 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
-  const [socket, setSocket] = useState(null);
-
-  // Initialize socket connection
-  useEffect(() => {
-    const newSocket = io('http://localhost:3000');
-    setSocket(newSocket);
-
-    // Clean up on unmount
-    return () => {
-      if (newSocket) {
-        newSocket.disconnect();
-      }
-    };
-  }, []);
-
-  // Handle socket events and user status
-  useEffect(() => {
-    if (!socket) return;
-
-    // Listen for user status changes
-    socket.on('user_status_change', ({ userId, online }) => {
-      setUsers(prevUsers => 
-        prevUsers.map(u => 
-          u._id === userId ? { ...u, online } : u
-        )
-      );
-    });
-
-    // Reconnect handler
-    socket.on('connect', () => {
-      if (user) {
-        socket.emit('user_connected', user.id);
-      }
-    });
-
-    // Disconnect handler
-    socket.on('disconnect', () => {
-      if (user) {
-        socket.emit('user_disconnected', user.id);
-      }
-    });
-
-    return () => {
-      socket.off('user_status_change');
-      socket.off('connect');
-      socket.off('disconnect');
-    };
-  }, [socket, user]);
+  
+  // Use the optimized socket hook
+  const { socket } = useSocket(user?.id, setUsers);
 
   // Check authentication status on mount
   useEffect(() => {
@@ -68,13 +24,12 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Emit online status when user state changes
+  // Fetch users when authenticated
   useEffect(() => {
-    if (socket && user) {
-      socket.emit('user_connected', user.id);
-      fetchUsers(); // Fetch users when authenticated
+    if (user) {
+      fetchUsers();
     }
-  }, [socket, user]);
+  }, [user]);
 
   const validateToken = async () => {
     try {
@@ -88,9 +43,6 @@ export const AuthProvider = ({ children }) => {
       });
 
       setUser(response.data.user);
-      if (socket) {
-        socket.emit('user_connected', response.data.user.id);
-      }
     } catch (error) {
       localStorage.removeItem('token');
       delete axios.defaults.headers.common['Authorization'];
@@ -111,10 +63,6 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(user);
-      
-      if (socket) {
-        socket.emit('user_connected', user.id);
-      }
       
       await fetchUsers();
       return { success: true };

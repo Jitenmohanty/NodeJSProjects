@@ -1,7 +1,7 @@
 import { Check, FileIcon, FileText, Image as ImageIcon } from "lucide-react";
 import { useTheme } from "../context/ThemeContex";
 
-const ChatWindow = ({ messages, loading, user, messagesEndRef }) => {
+const ChatWindow = ({ messages, loading, user, messagesEndRef,scrollTop }) => {
   const { darkMode } = useTheme();
 
   // console.log(messages,"messages");
@@ -120,6 +120,7 @@ const ChatWindow = ({ messages, loading, user, messagesEndRef }) => {
               </div>
             </div>
           ))}
+          {/* {!scrollTop && <div ref={messagesEndRef} />} */}
           <div ref={messagesEndRef} />
         </div>
       )}
