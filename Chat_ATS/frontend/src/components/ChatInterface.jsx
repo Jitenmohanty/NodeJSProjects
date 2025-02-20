@@ -2,14 +2,14 @@ import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import useSocket from "../hooks/useSocket";
+import { useGroupSocket } from "../hooks/useGroupSocket";
 import ChatHeader from "./ChatHeader";
-import ChatWindow from "./ChatWindow";
 import MessageInput from "./MessageInput";
 import UserList from "./UserList";
 import { useTheme } from "../context/ThemeContex";
 import GroupList from "./GroupList";
 import CreateGroupModal from "./CreateGroupModal";
-import GroupChatInterface from "./GroupChatInterface";
+import UnifiedChatWindow from "./UnifiedChatWindow";
 
 const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
   const { user, fetchUsers, users, setUsers } = useAuth();
@@ -17,6 +17,8 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
     user?.id,
     setUsers
   );
+  const { socket: groupSocket, sendGroupMessage, markGroupMessageAsRead } = useGroupSocket(user?.id);
+  
   const [selectedUser, setSelectedUser] = useState(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
@@ -30,18 +32,18 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
   // Group chat state
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const [groupPage, setGroupPage] = useState(1);
+  const [groupHasMore, setGroupHasMore] = useState(true);
 
   const { darkMode } = useTheme();
   const [selectAi, setSelectAi] = useState(false);
-
-  console.log(selectedGroup);
 
   // Fetch users on mount
   useEffect(() => {
     if (users.length === 0) fetchUsers();
   }, []);
 
-  // Handle socket events
+  // Handle direct message socket events
   useEffect(() => {
     if (!socket) return;
 
@@ -95,27 +97,66 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
     };
   }, [socket, selectedUser, user]);
 
+  // Handle group message socket events
+  useEffect(() => {
+    if (!groupSocket || !selectedGroup) return;
+
+    const handleReceiveGroupMessage = ({ message }) => {
+      setMessages((prev) => [...prev, message]);
+      markGroupMessageAsRead(message._id, selectedGroup._id);
+    };
+
+    const handleGroupMessageStatus = ({ messageId, readBy }) => {
+      setMessages((prev) =>
+        prev.map((msg) => (msg._id === messageId ? { ...msg, readBy } : msg))
+      );
+    };
+
+    groupSocket.on("receive_group_message", handleReceiveGroupMessage);
+    groupSocket.on("group_message_status_update", handleGroupMessageStatus);
+
+    return () => {
+      groupSocket.off("receive_group_message", handleReceiveGroupMessage);
+      groupSocket.off("group_message_status_update", handleGroupMessageStatus);
+    };
+  }, [groupSocket, selectedGroup]);
+
+  // Fetch direct messages
   const fetchMessages = async () => {
-    if (!selectedUser || !hasMore) return;
+    if ((!selectedUser && !selectedGroup) || !hasMore || loading) return;
     setLoading(true);
 
     try {
-      const response = await axios.get(
-        `http://localhost:3000/messages/${selectedUser._id}`,
-        {
-          params: { page, limit: 20 },
-        }
-      );
+      let response;
+      if (selectedUser) {
+        response = await axios.get(
+          `http://localhost:3000/messages/${selectedUser._id}`,
+          {
+            params: { page, limit: 20 },
+          }
+        );
 
-      if (response.data.length < 20) setHasMore(false);
-      setMessages((prev) => [...response.data, ...prev]);
-      setPage((prev) => prev + 1);
+        if (response.data.length < 20) setHasMore(false);
+        setMessages((prev) => [...response.data, ...prev]);
+        setPage((prev) => prev + 1);
 
-      response.data.forEach((msg) => {
-        if (msg.sender === selectedUser._id && !msg.readAt) {
-          markMessageAsRead(msg._id, msg.sender);
-        }
-      });
+        response.data.forEach((msg) => {
+          if (msg.sender === selectedUser._id && !msg.readAt) {
+            markMessageAsRead(msg._id, msg.sender);
+          }
+        });
+      } else if (selectedGroup) {
+        response = await axios.get(
+          `http://localhost:3000/groups/${selectedGroup._id}/messages`,
+          {
+            params: { page: groupPage, limit: 20 },
+          }
+        );
+
+        if (response.data.length < 20) setGroupHasMore(false);
+        setMessages((prev) => [...response.data, ...prev]);
+        setGroupPage((prev) => prev + 1);
+      }
     } catch (error) {
       console.error("Failed to fetch messages:", error);
     } finally {
@@ -123,21 +164,41 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
     }
   };
 
-  // Reset messages when the selected user changes
+  // Reset messages when selected user or group changes
   useEffect(() => {
-    if (selectedUser) {
-      setMessages([]);
-      setPage(1);
-      setHasMore(true);
+    setMessages([]);
+    setPage(1);
+    setGroupPage(1);
+    setHasMore(true);
+    setGroupHasMore(true);
+    
+    if (selectedUser || selectedGroup) {
       fetchMessages();
     }
-  }, [selectedUser]);
+    
+    // Clear unread messages for the selected contact
+    if (selectedUser) {
+      setUnreadMessages((prev) => ({
+        ...prev,
+        [selectedUser._id]: 0,
+      }));
+    } else if (selectedGroup) {
+      setUnreadMessages((prev) => ({
+        ...prev,
+        [`group_${selectedGroup._id}`]: 0,
+      }));
+    }
+  }, [selectedUser, selectedGroup]);
 
   // Load more messages when scrolling to the top
   const handleScroll = (event) => {
-    if (event.target.scrollTop === 0 && hasMore && !loading) {
+    if (event.target.scrollTop === 0 && !loading) {
       setScrollTop(true);
-      fetchMessages();
+      if (selectedUser && hasMore) {
+        fetchMessages();
+      } else if (selectedGroup && groupHasMore) {
+        fetchMessages();
+      }
     }
   };
 
@@ -147,39 +208,44 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Clear unread messages when selecting a user
-  useEffect(() => {
-    if (selectedUser) {
-      setUnreadMessages((prev) => ({
-        ...prev,
-        [selectedUser._id]: 0,
-      }));
-    }
-  }, [selectedUser]);
-
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!message.trim() || !selectedUser) return;
+    if (!message.trim() || (!selectedUser && !selectedGroup)) return;
 
     try {
-      const tempMessage = {
-        sender: user.id,
-        receiver: selectedUser._id,
-        text: message.trim(),
-        timestamp: new Date().toISOString(),
-        status: "sent",
-      };
+      if (selectedUser) {
+        // Send direct message
+        const tempMessage = {
+          sender: user.id,
+          receiver: selectedUser._id,
+          text: message.trim(),
+          timestamp: new Date().toISOString(),
+          status: "sent",
+        };
 
-      setMessages((prev) => [...prev, tempMessage]);
+        setMessages((prev) => [...prev, tempMessage]);
+        sendMessage(selectedUser._id, message.trim());
+      } else if (selectedGroup) {
+        // Send group message
+        const tempMessage = {
+          sender: user.id,
+          text: message.trim(),
+          timestamp: new Date().toISOString(),
+        };
+
+        setMessages((prev) => [...prev, tempMessage]);
+        sendGroupMessage(selectedGroup._id, message.trim());
+      }
+      
       setMessage("");
-
-      sendMessage(selectedUser._id, message.trim());
     } catch (error) {
       console.error("Failed to send message:", error);
     }
   };
 
   const handleFileUpload = async (e) => {
+    if (!selectedUser && !selectedGroup) return;
+    
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -202,23 +268,35 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
         }
       );
 
-      const tempMessage = {
-        sender: user.id,
-        receiver: selectedUser._id,
+      const fileData = {
         fileUrl: response.data.fileUrl,
         fileName: response.data.fileName,
         fileType: response.data.fileType,
-        timestamp: new Date().toISOString(),
-        status: "sent",
       };
 
-      setMessages((prev) => [...prev, tempMessage]);
+      if (selectedUser) {
+        // Send file in direct message
+        const tempMessage = {
+          sender: user.id,
+          receiver: selectedUser._id,
+          ...fileData,
+          timestamp: new Date().toISOString(),
+          status: "sent",
+        };
 
-      sendMessage(selectedUser._id, "", {
-        fileUrl: response.data.fileUrl,
-        fileName: response.data.fileName,
-        fileType: response.data.fileType,
-      });
+        setMessages((prev) => [...prev, tempMessage]);
+        sendMessage(selectedUser._id, "", fileData);
+      } else if (selectedGroup) {
+        // Send file in group message
+        const tempMessage = {
+          sender: user.id,
+          ...fileData,
+          timestamp: new Date().toISOString(),
+        };
+
+        setMessages((prev) => [...prev, tempMessage]);
+        sendGroupMessage(selectedGroup._id, "", fileData);
+      }
     } catch (error) {
       console.error("Failed to upload file:", error);
     } finally {
@@ -244,13 +322,17 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
   }, [selectAi]);
 
   const openGroupModal = () => {
-    console.log("Opening group modal");
     setIsGroupModalOpen(true);
   };
 
   const closeGroupModal = () => {
-    console.log("Closing group modal");
     setIsGroupModalOpen(false);
+  };
+
+  const resetSelection = () => {
+    setSelectedUser(null);
+    setSelectedGroup(null);
+    setSelectAi(false);
   };
 
   return (
@@ -264,10 +346,12 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
           selectedUser={selectedUser}
           setSelectedUser={setSelectedUser}
           setOpenChat={setOpenChat}
+          group={selectedGroup}
+          onBack={resetSelection}
         />
 
         <div className="h-[500px] flex flex-col">
-          {!selectedUser && !selectAi ? (
+          {!selectedUser && !selectedGroup && !selectAi ? (
             <>
               <UserList
                 users={users}
@@ -288,22 +372,18 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
             </>
           ) : (
             <>
-              {/* Chat Messages Window */}
-              {!selectedGroup ? (
-                <div className="flex-1 overflow-y-auto" onScroll={handleScroll}>
-                  <ChatWindow
-                    messages={messages}
-                    loading={loading}
-                    user={user}
-                    messagesEndRef={messagesEndRef}
-                    selectedUser={selectedUser}
-                    setSelectedUser={setSelectedUser}
-                    scrollTop={scrollTop}
-                  />
-                </div>
-              ) : (
-                <GroupChatInterface group={selectedGroup}/>
-              )}
+              {/* Unified Chat Window */}
+              <div className="flex-1 overflow-y-auto" onScroll={handleScroll}>
+                <UnifiedChatWindow 
+                  messages={messages}
+                  loading={loading}
+                  user={user}
+                  messagesEndRef={messagesEndRef}
+                  scrollTop={scrollTop}
+                  isGroup={!!selectedGroup}
+                  groupMembers={selectedGroup?.members || []}
+                />
+              </div>
 
               {/* Message Input Box */}
               <MessageInput
@@ -318,7 +398,6 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
         </div>
       </div>
 
-      {/* Pass correct props to CreateGroupModal */}
       <CreateGroupModal isOpen={isGroupModalOpen} onClose={closeGroupModal} />
     </div>
   );

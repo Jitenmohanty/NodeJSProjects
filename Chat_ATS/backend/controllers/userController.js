@@ -29,8 +29,8 @@ export const Login = async (req, res) => {
     // Update user's online status on login
     await User.findByIdAndUpdate(user._id, { online: true });
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-    console.log(token)
     res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    
   } catch (error) {
     res.status(500).json({ error: 'Error logging in' });
   }

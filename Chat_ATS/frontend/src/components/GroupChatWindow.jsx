@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useGroupSocket } from '../hooks/useGroupSocket';
 import axios from 'axios';
 
-const GroupChatInterface = ({ group, onBack }) => {
+const GroupChatWindow = ({ group, onBack }) => {
   const { user } = useAuth();
   const { socket, sendGroupMessage, markGroupMessageAsRead } = useGroupSocket(user?.id);
   const [messages, setMessages] = useState([]);
@@ -135,4 +135,4 @@ const GroupChatInterface = ({ group, onBack }) => {
 };
 
 
-export default GroupChatInterface;
+export default  GroupChatWindow 
