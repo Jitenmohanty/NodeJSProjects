@@ -1,5 +1,4 @@
-
-import React, { useRef } from "react";
+import React from "react";
 import { Check, FileIcon, FileText } from "lucide-react";
 import { useTheme } from "../context/ThemeContex";
 
@@ -13,6 +12,7 @@ const UnifiedChatWindow = ({
   groupMembers = [],
 }) => {
   const { darkMode } = useTheme();
+  console.log(messages)
 
   const formatTime = (timestamp) => {
     return new Date(timestamp).toLocaleTimeString("en-US", {
@@ -24,7 +24,7 @@ const UnifiedChatWindow = ({
   const MessageStatus = ({ status, readAt, readBy }) => {
     if (isGroup && readBy) {
       // For group messages, show read count
-      const readCount = readBy.length;
+      const readCount = readBy?.length || 0;
       return readCount > 0 ? (
         <span className="text-xs text-gray-400">{readCount} read</span>
       ) : null;
@@ -51,10 +51,32 @@ const UnifiedChatWindow = ({
     return null;
   };
 
-  const getSenderName = (senderId) => {
+  const getSenderName = (sender) => {
     if (!isGroup) return null;
-    // const sender = groupMembers.find(member => member._id === senderId || member.id === senderId);
-    return senderId ? senderId.name : "Unknown user";
+    
+    // Handle populated sender object
+    if (sender && typeof sender === 'object' && sender.name) {
+      return sender.name;
+    }
+    
+    // Handle sender ID (would need to lookup in groupMembers)
+    const member = groupMembers.find(m => m._id === sender || m.id === sender);
+    if (member && member.name) {
+      return member.name;
+    }
+    
+    return "Unknown user";
+  };
+
+  const isUserMessageFn = (msg) => {
+    const senderId = msg.sender;
+    
+    // Handle populated sender object vs ID
+    if (typeof senderId === 'object' && senderId !== null) {
+      return senderId._id === user.id;
+    }
+    
+    return senderId === user.id;
   };
 
   const FilePreview = ({ fileUrl, fileName, fileType }) => {
@@ -119,14 +141,14 @@ const UnifiedChatWindow = ({
       ) : (
         <div className="space-y-4">
           {messages.map((msg, index) => {
-            // console.log(msg)
-            const isUserMessage = isGroup?msg.sender._id === user.id || msg.sender === user.id:msg.sender === user.id;
-            const senderName =
-              isGroup && !isUserMessage ? getSenderName(msg.sender) : null;
+            if (!msg) return null; // Guard against undefined messages
+            
+            const isUserMessage = isUserMessageFn(msg);
+            const senderName = isGroup && !isUserMessage ? getSenderName(msg.sender) : null;
 
             return (
               <div
-                key={msg._id || index}
+                key={msg._id || `msg-${index}`}
                 className={`flex ${
                   isUserMessage ? "justify-end" : "justify-start"
                 }`}
@@ -164,7 +186,7 @@ const UnifiedChatWindow = ({
                           : "text-gray-500 dark:text-gray-400"
                       }`}
                     >
-                      {formatTime(msg.timestamp)}
+                      {formatTime(msg.timestamp || msg.createdAt || new Date())}
                     </p>
                     {isUserMessage && (
                       <MessageStatus

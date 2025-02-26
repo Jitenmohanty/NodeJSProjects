@@ -97,6 +97,7 @@ Authorization: Bearer <your_jwt_token>
 Response:
 
 json
+```bash
 {
   "id": "12345",
   "name": "new-feature",

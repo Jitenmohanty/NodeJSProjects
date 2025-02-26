@@ -1,19 +1,20 @@
-// useSocket.js
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import io from 'socket.io-client';
 
-export const useSocket = (userId, setUsers) => {
-  const socket = useRef();
+const useSocket = (userId, setUsers) => {
+  const socketRef = useRef(null);
 
   useEffect(() => {
     // Initialize socket connection
-    socket.current = io('http://localhost:3000');
+    socketRef.current = io('http://localhost:3000');
 
     if (userId) {
-      socket.current.emit('user_connected', userId);
+      console.log(`User ${userId} connected to direct message socket`);
+      socketRef.current.emit('user_connected', userId);
 
       // Listen for user status changes
-      socket.current.on('user_status_change', ({ userId, online }) => {
+      socketRef.current.on('user_status_change', ({ userId, online }) => {
+        console.log(`User ${userId} status changed to ${online ? 'online' : 'offline'}`);
         setUsers(prevUsers => 
           prevUsers.map(u => 
             u._id === userId ? { ...u, online } : u
@@ -22,7 +23,8 @@ export const useSocket = (userId, setUsers) => {
       });
 
       // Listen for bulk status updates
-      socket.current.on('users_status_update', (users) => {
+      socketRef.current.on('users_status_update', (users) => {
+        console.log('Received users status update');
         setUsers(prev =>
           prev.map(u => {
             const updatedUser = users.find(user => user._id === u._id);
@@ -32,22 +34,24 @@ export const useSocket = (userId, setUsers) => {
       });
 
       // Reconnect handler
-      socket.current.on('connect', () => {
-        socket.current.emit('user_connected', userId);
+      socketRef.current.on('connect', () => {
+        console.log(`Socket reconnected for user ${userId}`);
+        socketRef.current.emit('user_connected', userId);
       });
     }
 
     // Cleanup function
     return () => {
-      if (socket.current && userId) {
-        socket.current.emit('user_disconnected', userId);
-        socket.current.disconnect();
+      if (socketRef.current && userId) {
+        console.log(`User ${userId} disconnecting from socket`);
+        socketRef.current.emit('user_disconnected', userId);
+        socketRef.current.disconnect();
       }
     };
   }, [userId, setUsers]);
 
-  const sendMessage = (receiverId, text, fileData = null) => {
-    if (socket.current) {
+  const sendMessage = useCallback((receiverId, text, fileData = null) => {
+    if (socketRef.current) {
       const messageData = {
         senderId: userId,
         receiverId,
@@ -55,22 +59,24 @@ export const useSocket = (userId, setUsers) => {
         ...fileData
       };
       
-      socket.current.emit('send_message', messageData);
+      console.log(`Sending direct message to ${receiverId}`);
+      socketRef.current.emit('send_message', messageData);
     }
-  };
+  }, [userId]);
 
-  const markMessageAsRead = (messageId, senderId) => {
-    if (socket.current) {
-      socket.current.emit('message_read', {
+  const markMessageAsRead = useCallback((messageId, senderId) => {
+    if (socketRef.current) {
+      console.log(`Marking message ${messageId} as read`);
+      socketRef.current.emit('message_read', {
         messageId,
         readBy: userId,
         senderId
       });
     }
-  };
+  }, [userId]);
 
   return {
-    socket: socket.current,
+    socket: socketRef.current,
     sendMessage,
     markMessageAsRead
   };
