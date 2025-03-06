@@ -12,7 +12,6 @@ const UnifiedChatWindow = ({
   groupMembers = [],
 }) => {
   const { darkMode } = useTheme();
-  console.log(messages)
 
   const formatTime = (timestamp) => {
     return new Date(timestamp).toLocaleTimeString("en-US", {

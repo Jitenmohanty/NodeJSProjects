@@ -8,6 +8,7 @@ export const GroupProvider = ({ children }) => {
   const { user } = useAuth();
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [unreadGroupMessages, setUnreadGroupMessages] = useState({});
 
   const fetchGroups = useCallback(async () => {
     if (!user) {
@@ -21,6 +22,19 @@ export const GroupProvider = ({ children }) => {
       console.log("Fetching groups for user", user.id);
       const response = await axios.get('http://localhost:3000/groups');
       setGroups(response.data);
+      
+      // Fetch unread group messages
+      const unreadResponse = await axios.get('http://localhost:3000/groups/unread');
+      
+      // Process unread messages
+      const unreadCounts = {};
+      if (unreadResponse.data && unreadResponse.data.length > 0) {
+        unreadResponse.data.forEach(item => {
+          unreadCounts[`group_${item.groupId}`] = item.count;
+        });
+      }
+      
+      setUnreadGroupMessages(unreadCounts);
     } catch (error) {
       console.error('Failed to fetch groups:', error);
     } finally {
@@ -60,6 +74,20 @@ export const GroupProvider = ({ children }) => {
       return null;
     }
   }, [groups]);
+  
+  const updateUnreadCount = useCallback((groupId, count) => {
+    setUnreadGroupMessages(prev => ({
+      ...prev,
+      [`group_${groupId}`]: count
+    }));
+  }, []);
+  
+  const clearUnreadCount = useCallback((groupId) => {
+    setUnreadGroupMessages(prev => ({
+      ...prev,
+      [`group_${groupId}`]: 0
+    }));
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -73,7 +101,10 @@ export const GroupProvider = ({ children }) => {
       loading,
       fetchGroups,
       createGroup,
-      getGroupById
+      getGroupById,
+      unreadGroupMessages,
+      updateUnreadCount,
+      clearUnreadCount
     }}>
       {children}
     </GroupContext.Provider>
