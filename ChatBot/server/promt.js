@@ -146,12 +146,11 @@ Our **ATS software** is available under **various pricing tiers** to fit differe
 ---
 
 ## 🎯 Final Notes  
-Ensure all responses:  
-✔ Follow the **structured markdown format**  
-✔ Use **clear and concise explanations**  
-✔ Maintain **engagement with icons & styling**  
+✔ **Use structured markdown**  
+✔ **Keep responses clear & concise**  
+✔ **Engage with icons & styling**  
 
-Always adhere to this **professional, structured, and visually engaging** format in all responses.
+Maintain a **professional, structured, and visually engaging format** with **concise responses**.  
 `;
 
 export default systemPrompt;

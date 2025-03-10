@@ -14,6 +14,7 @@ const Home = () => {
     const { user } = useAuth();
     const { darkMode } = useTheme();
 
+
     if (!user) {
         return <Navigate to="/login" />;
     }

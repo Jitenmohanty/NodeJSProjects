@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import ThemeToggle from './components/ThemeToggle';
@@ -6,6 +6,7 @@ import ThemeToggle from './components/ThemeToggle';
 const Dashboard = () => {
     const { user } = useAuth();
     const { darkMode } = useTheme();
+    const [imageLoaded, setImageLoaded] = useState(false);
 
     const handleLogout = () => {
         window.location.href = 'http://localhost:8000/auth/logout';
@@ -19,10 +20,12 @@ const Dashboard = () => {
         <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-100'} p-8 transition-colors duration-200`}>
             <div className={`max-w-md mx-auto ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6 transition-colors duration-200`}>
                 <div className="flex items-center mb-6">
+                    {!imageLoaded && <div className="w-16 h-16 rounded-full mr-4 bg-gray-300 animate-pulse"></div>}
                     <img
                         src={user.image}
                         alt={user.displayName}
-                        className="w-16 h-16 rounded-full mr-4"
+                        className={`w-16 h-16 rounded-full mr-4 ${imageLoaded ? '' : 'hidden'}`}
+                        onLoad={() => setImageLoaded(true)}
                     />
                     <div>
                         <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>

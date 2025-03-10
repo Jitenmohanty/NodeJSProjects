@@ -105,7 +105,7 @@ passport.use(
 
 // Existing Message Schema
 const messageSchema = new mongoose.Schema({
-  text: { type: String, required: true },
+  text: { type: String, required: true,unique:true },
   response: { type: String },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   createdAt: { type: Date, default: Date.now },
@@ -187,6 +187,16 @@ app.post("/api/send", isAuthenticated, async (req, res) => {
       return res.status(400).json({ error: "Text is required" });
     }
 
+    // Check if the same question was asked before
+    const existingMessage = await Message.findOne({ text });
+    if (existingMessage) {
+      return res.status(200).json({
+        message: "Response retrieved from cache",
+        data: existingMessage,
+      });
+    }
+
+    // If no cached response, generate new response
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const result = await model.generateContent({
@@ -198,7 +208,7 @@ app.post("/api/send", isAuthenticated, async (req, res) => {
 
     const geminiResponse = result.response.text();
 
-    // Save to database with user reference
+    // Save to database
     const newMessage = new Message({
       text,
       response: geminiResponse,

@@ -203,6 +203,35 @@ app.get("/groups/:groupId/messages", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Error fetching group messages" });
   }
 });
+// Group Unread Messages Route
+app.get("/groups/unread", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Find groups the user is a member of
+    const userGroups = await Group.find({ members: userId });
+    
+    // For each group, count messages not read by this user
+    const unreadCounts = await Promise.all(
+      userGroups.map(async (group) => {
+        const count = await GroupMessage.countDocuments({
+          group: group._id,
+          'readBy.user': { $ne: userId }
+        });
+        
+        return {
+          groupId: group._id,
+          count
+        };
+      })
+    );
+    
+    res.json(unreadCounts);
+  } catch (error) {
+    console.error("Error fetching unread group messages:", error);
+    res.status(500).json({ error: "Error fetching unread group messages" });
+  }
+});
 
 // Socket.io Setup
 const connectedUsers = new Map();
@@ -334,39 +363,93 @@ io.on("connection", (socket) => {
     socket.leave(`group:${groupId}`);
   });
 
-  socket.on("send_group_message", async (data) => {
-    try {
-      const { groupId, senderId, text, fileUrl, fileName, fileType } = data;
+// Add this improved handler to your socket.io connection block in server.js
 
-      const group = await Group.findById(groupId);
-      if (!group.members.includes(senderId)) {
-        throw new Error("Not a member of this group");
-      }
+socket.on("send_group_message", async (data) => {
+  try {
+    const { groupId, senderId, text, fileUrl, fileName, fileType } = data;
 
-      const message = new GroupMessage({
-        group: groupId,
-        sender: senderId,
-        text: text || "",
-        fileUrl,
-        fileName,
-        fileType,
-        readBy: [{ user: senderId }], // Mark as read by sender
-      });
-
-      await message.save();
-
-      const populatedMessage = await GroupMessage.findById(
-        message._id
-      ).populate("sender", "name email");
-
-      io.to(`group:${groupId}`).emit("receive_group_message", {
-        message: populatedMessage,
-      });
-    } catch (error) {
-      console.error("Error sending group message:", error);
-      socket.emit("group_message_error", { error: "Failed to send message" });
+    const group = await Group.findById(groupId);
+    if (!group || !group.members.includes(senderId)) {
+      throw new Error("Not a member of this group");
     }
-  });
+
+    // Create new message
+    const message = new GroupMessage({
+      group: groupId,
+      sender: senderId,
+      text: text || "",
+      fileUrl,
+      fileName,
+      fileType,
+      readBy: [{ user: senderId }], // Mark as read by sender
+    });
+
+    await message.save();
+
+    // Populate sender info for the response
+    const populatedMessage = await GroupMessage.findById(message._id)
+      .populate("sender", "name email");
+
+    // Send to all group members
+    const onlineGroupMembers = group.members.filter(memberId => 
+      memberId.toString() !== senderId.toString() && connectedUsers.has(memberId.toString())
+    );
+
+    // Emit to the group channel for clients currently viewing the group
+    io.to(`group:${groupId}`).emit("receive_group_message", {
+      message: populatedMessage,
+    });
+
+    // Also send individual notifications to online group members who might not be in the group channel
+    for (const memberId of onlineGroupMembers) {
+      const memberSocketId = connectedUsers.get(memberId.toString());
+      if (memberSocketId) {
+        // Emit a specialized notification for unread count updates
+        io.to(memberSocketId).emit("group_message_notification", {
+          messageId: message._id,
+          groupId: groupId,
+          sender: {
+            _id: senderId,
+            name: (await User.findById(senderId).select("name")).name
+          },
+          text: text,
+          timestamp: message.timestamp
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Error sending group message:", error);
+    socket.emit("group_message_error", { error: "Failed to send message" });
+  }
+});
+
+// Improve the group_message_read handler
+socket.on("group_message_read", async ({ messageId, userId, groupId }) => {
+  try {
+    const message = await GroupMessage.findById(messageId);
+    if (!message) {
+      return;
+    }
+    
+    // Check if user already read this message
+    if (!message.readBy.some(read => read.user.toString() === userId)) {
+      // Add user to readBy array with timestamp
+      message.readBy.push({ user: userId, readAt: new Date() });
+      await message.save();
+      
+      // Notify group members about read status
+      io.to(`group:${groupId}`).emit("group_message_status_update", {
+        messageId,
+        groupId,
+        readBy: message.readBy,
+        userId
+      });
+    }
+  } catch (error) {
+    console.error("Error marking group message as read:", error);
+  }
+});
 
   socket.on("group_message_read", async ({ messageId, userId, groupId }) => {
     try {

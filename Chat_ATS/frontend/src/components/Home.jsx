@@ -3,12 +3,18 @@ import { MessageCircle } from "lucide-react";
 import ChatInterface from "./ChatInterface";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContex";
+import { useGroup } from "../context/GroupContext"; // Import useGroup
 import axios from "axios";
 
 const Home = () => {
   const [openChat, setOpenChat] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState({});
+  
   const { user, socket, fetchUsers, setUsers } = useAuth();
+  const { unreadGroupMessages } = useGroup(); // Get unread group messages
+  
+    console.log(unreadGroupMessages,"unreadmessage")
+    console.log(unreadGroupMessages,"unreadMessage group")
 
   const { darkMode } = useTheme();
 
@@ -28,7 +34,6 @@ const Home = () => {
         } else {
           setUnreadMessages({});
         }
-        // console.log(data)
       } catch (error) {
         console.log(error.message);
       }
@@ -90,10 +95,27 @@ const Home = () => {
     }
   }, [user, fetchUsers]);
 
-  const totalUnreadMessages = Object.values(unreadMessages).reduce(
+  // Calculate total unread direct messages
+  const directMessagesUnread = Object.values(unreadMessages).reduce(
     (sum, count) => sum + count,
     0
   );
+  
+  // Calculate total unread group messages
+  const groupMessagesUnread = Object.values(unreadGroupMessages).reduce(
+    (sum, count) => sum + count, 
+    0
+  );
+  
+  // Calculate total unread messages (direct + group)
+  const totalUnreadMessages = directMessagesUnread + groupMessagesUnread;
+
+  // Log for debugging
+  useEffect(() => {
+    console.log("Direct unread:", directMessagesUnread);
+    console.log("Group unread:", groupMessagesUnread);
+    console.log("Total unread:", totalUnreadMessages);
+  }, [directMessagesUnread, groupMessagesUnread, totalUnreadMessages]);
 
   const handleOpenChat = () => {
     setOpenChat(true);
@@ -144,6 +166,7 @@ const Home = () => {
           setOpenChat={handleCloseChat}
           unreadMessages={unreadMessages}
           setUnreadMessages={setUnreadMessages}
+          unreadGroupMessages={unreadGroupMessages} // Pass unread group messages
         />
       )}
     </div>

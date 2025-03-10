@@ -66,12 +66,12 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
     if (!socket) return;
 
     const handleReceiveMessage = (data) => {
-      console.log("Received direct message:", data);
+      //console.log("Received direct message:", data);
       const messageId = data.message._id || data.message.tempId;
 
       // Check if we've already processed this message
       if (processedMessageIdsRef.current.has(messageId)) {
-        console.log("Skipping already processed message:", messageId);
+        //console.log("Skipping already processed message:", messageId);
         return;
       }
 
@@ -99,7 +99,7 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
     };
 
     const handleMessageStatus = ({ messageId, status, readAt }) => {
-      console.log("Message status update:", messageId, status);
+      //console.log("Message status update:", messageId, status);
       setMessages((prev) =>
         prev.map((msg) =>
           msg._id === messageId || msg.tempId === messageId ? { ...msg, status, readAt } : msg
@@ -108,7 +108,7 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
     };
 
     const handleUserStatus = ({ userId, online }) => {
-      console.log("User status change:", userId, online);
+      //console.log("User status change:", userId, online);
       setUsers((prev) =>
         prev.map((u) => (u._id === userId ? { ...u, online } : u))
       );
@@ -130,13 +130,13 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
     if (!groupSocket) return;
 
     const handleReceiveGroupMessage = ({ message }) => {
-      console.log("Received group message:", message);
+      //console.log("Received group message:", message);
       const messageId = message._id;
       const tempId = message.tempId;
 
       // Case 1: This is a server response for a message we sent with a tempId
       if (tempId && messages.some(msg => msg.tempId === tempId)) {
-        console.log("Updating temp message with server data:", message);
+        //console.log("Updating temp message with server data:", message);
         
         // Replace the temporary message with the server-confirmed message
         setMessages(prev => prev.map(msg => 
@@ -152,14 +152,14 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
 
       // Case 2: We've already processed this message by ID
       if (messageId && processedMessageIdsRef.current.has(messageId)) {
-        console.log(`Skipping already processed message ${messageId}`);
+        //console.log(`Skipping already processed message ${messageId}`);
         return;
       }
 
       // Case 3: This is a message from the current user without a tempId match
       // (this shouldn't normally happen, but just in case)
       if (message.sender._id === user.id) {
-        console.log("Received own message without tempId, skipping");
+        //console.log("Received own message without tempId, skipping");
         if (messageId) {
           processedMessageIdsRef.current.set(messageId, 'skip-own');
         }
@@ -189,7 +189,7 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
     };
 
     const handleGroupMessageStatus = ({ messageId, readBy }) => {
-      console.log("Group message status update:", messageId, readBy);
+      //console.log("Group message status update:", messageId, readBy);
       setMessages((prev) =>
         prev.map((msg) => (msg._id === messageId || msg.tempId === messageId ? { ...msg, readBy } : msg))
       );
@@ -210,7 +210,7 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
       const response = await axios.get(`http://localhost:3000/groups/${groupId}/messages`);
       setGroupData(response.data);
     } catch (error) {
-      console.error("Failed to fetch group details:", error);
+      //console.error("Failed to fetch group details:", error);
     }
   }, []);
 
@@ -286,7 +286,7 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
         });
       }
     } catch (error) {
-      console.error("Failed to fetch messages:", error);
+      //console.error("Failed to fetch messages:", error);
     } finally {
       setLoading(false);
     }
@@ -396,7 +396,7 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
 
       setMessage("");
     } catch (error) {
-      console.error("Failed to send message:", error);
+      //console.error("Failed to send message:", error);
     }
   };
 
@@ -469,7 +469,7 @@ const ChatInterface = ({ setOpenChat, unreadMessages, setUnreadMessages }) => {
         sendGroupMessage(selectedGroup._id, "", fileData, tempId);
       }
     } catch (error) {
-      console.error("Failed to upload file:", error);
+      //console.error("Failed to upload file:", error);
     } finally {
       setUploading(false);
       e.target.value = "";

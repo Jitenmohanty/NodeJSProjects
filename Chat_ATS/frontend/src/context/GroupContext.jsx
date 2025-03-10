@@ -5,10 +5,11 @@ import { useAuth } from './AuthContext';
 const GroupContext = createContext(null);
 
 export const GroupProvider = ({ children }) => {
-  const { user } = useAuth();
+  const { user, socket } = useAuth();
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [unreadGroupMessages, setUnreadGroupMessages] = useState({});
+  const [activeGroupId, setActiveGroupId] = useState(null); // Track which group the user is viewing
 
   const fetchGroups = useCallback(async () => {
     if (!user) {
@@ -19,18 +20,18 @@ export const GroupProvider = ({ children }) => {
     
     setLoading(true);
     try {
-      console.log("Fetching groups for user", user.id);
       const response = await axios.get('http://localhost:3000/groups');
       setGroups(response.data);
       
       // Fetch unread group messages
       const unreadResponse = await axios.get('http://localhost:3000/groups/unread');
+      console.log("Unread group messages:", unreadResponse.data);
       
       // Process unread messages
       const unreadCounts = {};
       if (unreadResponse.data && unreadResponse.data.length > 0) {
         unreadResponse.data.forEach(item => {
-          unreadCounts[`group_${item.groupId}`] = item.count;
+          unreadCounts[item.groupId] = item.count;
         });
       }
       
@@ -44,11 +45,10 @@ export const GroupProvider = ({ children }) => {
 
   const createGroup = async (name, description, members) => {
     try {
-      console.log("Creating new group:", { name, description, members });
       const response = await axios.post('http://localhost:3000/groups', {
         name,
         description,
-        members: [...members, user.id] // Ensure creator is a member
+        members
       });
       
       setGroups(prev => [...prev, response.data]);
@@ -62,36 +62,92 @@ export const GroupProvider = ({ children }) => {
     }
   };
   
-  const getGroupById = useCallback(async (groupId) => {
-    try {
-      const cachedGroup = groups.find(g => g._id === groupId);
-      if (cachedGroup) return cachedGroup;
-      
-      const response = await axios.get(`http://localhost:3000/groups/${groupId}`);
-      return response.data;
-    } catch (error) {
-      console.error(`Failed to get group ${groupId}:`, error);
-      return null;
-    }
+  const getGroupById = useCallback((groupId) => {
+    return groups.find(g => g._id === groupId) || null;
   }, [groups]);
   
-  const updateUnreadCount = useCallback((groupId, count) => {
-    setUnreadGroupMessages(prev => ({
-      ...prev,
-      [`group_${groupId}`]: count
-    }));
+  const updateUnreadCount = useCallback((groupId, countOrUpdater) => {
+    setUnreadGroupMessages(prev => {
+      const currentCount = prev[groupId] || 0;
+      const newCount = typeof countOrUpdater === 'function' 
+        ? countOrUpdater(currentCount) 
+        : countOrUpdater;
+      
+      return {
+        ...prev,
+        [groupId]: newCount
+      };
+    });
   }, []);
   
   const clearUnreadCount = useCallback((groupId) => {
     setUnreadGroupMessages(prev => ({
       ...prev,
-      [`group_${groupId}`]: 0
+      [groupId]: 0
     }));
   }, []);
+  
+  const setActiveGroup = useCallback((groupId) => {
+    setActiveGroupId(groupId);
+    // When a group becomes active, clear its unread count
+    if (groupId) {
+      clearUnreadCount(groupId);
+    }
+  }, [clearUnreadCount]);
 
+  // Listen for socket events
+  useEffect(() => {
+    if (!socket || !user) return;
+
+    // Standard group message reception
+    const handleReceiveGroupMessage = (data) => {
+      if (data.message && data.message.group) {
+        const groupId = data.message.group;
+        
+        // Only update count if this message is not from current user and user is not viewing this group
+        if (data.message.sender !== user.id && activeGroupId !== groupId) {
+          updateUnreadCount(groupId, count => (count || 0) + 1);
+        }
+      }
+    };
+    
+    // Special notification for when user is not in the group chat but online
+    const handleGroupNotification = (data) => {
+      if (data.groupId) {
+        // Only increment if not actively viewing this group
+        if (activeGroupId !== data.groupId) {
+          updateUnreadCount(data.groupId, count => (count || 0) + 1);
+          
+          // Optionally show a browser notification
+          if (Notification.permission === "granted") {
+            const group = getGroupById(data.groupId);
+            const groupName = group ? group.name : "A group";
+            new Notification(`New message in ${groupName}`, {
+              body: `${data.sender.name}: ${data.text.substring(0, 50)}${data.text.length > 50 ? '...' : ''}`
+            });
+          }
+        }
+      }
+    };
+
+    socket.on('receive_group_message', handleReceiveGroupMessage);
+    socket.on('group_message_notification', handleGroupNotification);
+
+    return () => {
+      socket.off('receive_group_message', handleReceiveGroupMessage);
+      socket.off('group_message_notification', handleGroupNotification);
+    };
+  }, [socket, user, activeGroupId, updateUnreadCount, getGroupById]);
+
+  // Initial fetch
   useEffect(() => {
     if (user) {
       fetchGroups();
+      
+      // Request notification permission on first load
+      if (Notification.permission !== "denied" && Notification.permission !== "granted") {
+        Notification.requestPermission();
+      }
     }
   }, [user, fetchGroups]);
 
@@ -104,7 +160,9 @@ export const GroupProvider = ({ children }) => {
       getGroupById,
       unreadGroupMessages,
       updateUnreadCount,
-      clearUnreadCount
+      clearUnreadCount,
+      activeGroupId,
+      setActiveGroup
     }}>
       {children}
     </GroupContext.Provider>

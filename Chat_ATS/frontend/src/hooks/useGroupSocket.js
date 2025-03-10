@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import io from 'socket.io-client';
 
-export const useGroupSocket = (userId) => {
+export const useGroupSocket = (userId, updateUnreadCount) => {
   const socketRef = useRef(null);
   
   useEffect(() => {
@@ -25,6 +25,19 @@ export const useGroupSocket = (userId) => {
       socketRef.current.on('connect_error', (err) => {
         console.error('Group socket connection error:', err);
       });
+      
+      // Add handler for receiving group messages
+      socketRef.current.on('receive_group_message', (data) => {
+        console.log('Received group message:', data);
+        // Only update unread count if this user isn't the sender
+        if (data.message && data.message.sender !== userId) {
+          const groupId = data.message.group;
+          if (updateUnreadCount && groupId) {
+            console.log(`Updating unread count for group ${groupId}`);
+            updateUnreadCount(groupId, (prev) => (prev || 0) + 1);
+          }
+        }
+      });
     }
     
     return () => {
@@ -34,7 +47,7 @@ export const useGroupSocket = (userId) => {
         socketRef.current = null;
       }
     };
-  }, [userId]);
+  }, [userId, updateUnreadCount]);
 
   const joinGroup = useCallback((groupId) => {
     if (socketRef.current && userId) {
@@ -62,14 +75,13 @@ export const useGroupSocket = (userId) => {
       groupId,
       senderId: userId,
       text,
-      tempId, // Send tempId to server
+      tempId,
       ...fileData
     };
     
     console.log('Sending group message:', messageData);
     socketRef.current.emit('send_group_message', messageData);
     
-    // Return the tempId so the component can use it
     return tempId;
   }, [userId]);
 

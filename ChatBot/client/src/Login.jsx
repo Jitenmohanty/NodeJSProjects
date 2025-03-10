@@ -9,7 +9,8 @@ const Login = () => {
     const { darkMode } = useTheme();
 
     if (user) {
-        return <Navigate to="/dashboard" />;
+        return <Navigate to="/
+        " />;
     }
 
     const handleGoogleLogin = () => {
