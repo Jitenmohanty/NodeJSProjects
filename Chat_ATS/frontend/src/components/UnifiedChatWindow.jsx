@@ -1,19 +1,66 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Check, FileIcon, FileText } from "lucide-react";
-import { useTheme } from "../context/ThemeContex";
 
 const UnifiedChatWindow = ({
   messages,
   loading,
+  loadingOlder,
   user,
-  messagesEndRef,
-  scrollTop,
   isGroup = false,
   groupMembers = [],
+  messagesEndRef,
+  chatContainerRef,
+  selectedUser,
 }) => {
-  const { darkMode } = useTheme();
+  const [processedMessages, setProcessedMessages] = useState([]);
+  const [isBlocked, setIsBlocked] = useState(false);
+
+  console.log(user);
+  console.log(selectedUser);
+
+  useEffect(() => {
+    const checkIfUserIsBlocked = () => {
+      if (user?.blockedUsers?.includes(selectedUser._id)) {
+        setIsBlocked(true);
+      } else {
+        setIsBlocked(false);
+      }
+    };
+
+    checkIfUserIsBlocked();
+  }, [user, selectedUser]); // Re-run when user or selectedUser changes
+
+  // Process messages to ensure consistent format
+  useEffect(() => {
+    if (!messages || !user) return;
+
+    const processed = messages.map((msg) => {
+      const isUserMessage = determineIfUserMessage(msg, user);
+      return {
+        ...msg,
+        isUserMessage,
+      };
+    });
+
+    setProcessedMessages(processed);
+  }, [messages, user]);
+
+  // Determine if a message is from the current user
+  const determineIfUserMessage = (msg, currentUser) => {
+    if (!msg || !currentUser) return false;
+
+    const senderId = msg.sender;
+    const userId = currentUser.id || currentUser._id;
+
+    if (typeof senderId === "object" && senderId !== null) {
+      return senderId._id === userId || senderId.id === userId;
+    }
+
+    return senderId === userId;
+  };
 
   const formatTime = (timestamp) => {
+    if (!timestamp) return "";
     return new Date(timestamp).toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
@@ -22,14 +69,12 @@ const UnifiedChatWindow = ({
 
   const MessageStatus = ({ status, readAt, readBy }) => {
     if (isGroup && readBy) {
-      // For group messages, show read count
       const readCount = readBy?.length || 0;
       return readCount > 0 ? (
         <span className="text-xs text-gray-400">{readCount} read</span>
       ) : null;
     }
 
-    // For direct messages
     if (status === "sent") {
       return <Check className="h-3 w-3 text-gray-400" />;
     } else if (status === "delivered") {
@@ -42,8 +87,8 @@ const UnifiedChatWindow = ({
     } else if (status === "read") {
       return (
         <div className="flex">
-          <Check className="h-3 w-3 text-gray-800" />
-          <Check className="h-3 w-3 -ml-1 text-gray-800" />
+          <Check className="h-3 w-3 text-blue-300" />
+          <Check className="h-3 w-3 -ml-1 text-blue-300" />
         </div>
       );
     }
@@ -52,44 +97,35 @@ const UnifiedChatWindow = ({
 
   const getSenderName = (sender) => {
     if (!isGroup) return null;
-    
-    // Handle populated sender object
-    if (sender && typeof sender === 'object' && sender.name) {
+
+    if (sender && typeof sender === "object" && sender.name) {
       return sender.name;
     }
-    
-    // Handle sender ID (would need to lookup in groupMembers)
-    const member = groupMembers.find(m => m._id === sender || m.id === sender);
+
+    const member = groupMembers.find(
+      (m) => m._id === sender || m.id === sender
+    );
     if (member && member.name) {
       return member.name;
     }
-    
+
     return "Unknown user";
   };
 
-  const isUserMessageFn = (msg) => {
-    const senderId = msg.sender;
-    
-    // Handle populated sender object vs ID
-    if (typeof senderId === 'object' && senderId !== null) {
-      return senderId._id === user.id;
-    }
-    
-    return senderId === user.id;
-  };
-
   const FilePreview = ({ fileUrl, fileName, fileType }) => {
+    if (!fileUrl) return null;
+
     if (fileType?.startsWith("image/")) {
       return (
         <div className="relative group">
           <img
             src={fileUrl}
-            alt={fileName}
+            alt={fileName || "Image"}
             className="max-w-[200px] max-h-[200px] rounded-lg cursor-pointer"
             onClick={() => window.open(fileUrl, "_blank")}
           />
           <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-1 text-xs truncate">
-            {fileName}
+            {fileName || "Image"}
           </div>
         </div>
       );
@@ -98,7 +134,7 @@ const UnifiedChatWindow = ({
         <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-lg flex flex-col items-center">
           <FileText className="w-8 h-8 text-red-500" />
           <p className="text-sm truncate max-w-[150px] text-gray-800 dark:text-gray-200">
-            {fileName}
+            {fileName || "PDF Document"}
           </p>
           <a
             href={fileUrl}
@@ -120,86 +156,128 @@ const UnifiedChatWindow = ({
             rel="noopener noreferrer"
             className="text-sm truncate max-w-[150px] text-blue-500 underline"
           >
-            {fileName}
+            {fileName || "File"}
           </a>
         </div>
       );
     }
   };
 
+  const renderDateSeparator = (currMsg, prevMsg) => {
+    if (!currMsg || !prevMsg) return null;
+
+    const currDate = new Date(
+      currMsg.timestamp || currMsg.createdAt
+    ).toLocaleDateString();
+    const prevDate = new Date(
+      prevMsg.timestamp || prevMsg.createdAt
+    ).toLocaleDateString();
+
+    if (currDate !== prevDate) {
+      return (
+        <div className="flex justify-center my-3">
+          <div className="bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-full text-xs text-gray-600 dark:text-gray-300">
+            {currDate}
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
-    <div
-      className={`flex-1 overflow-y-auto p-4 ${
-        darkMode ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-900"
-      }`}
-    >
-      {loading ? (
+    <div className="flex-1 overflow-y-auto p-4" ref={chatContainerRef}>
+      {loading && !loadingOlder ? (
         <div className="flex items-center justify-center h-full">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
         </div>
       ) : (
-        <div className="space-y-4">
-          {messages.map((msg, index) => {
-            if (!msg) return null; // Guard against undefined messages
-            
-            const isUserMessage = isUserMessageFn(msg);
-            const senderName = isGroup && !isUserMessage ? getSenderName(msg.sender) : null;
+        <div className="space-y-2">
+          {loadingOlder && (
+            <div className="flex justify-center py-2">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+            </div>
+          )}
+
+          {processedMessages.map((msg, index) => {
+            if (!msg) return null;
+
+            const prevMsg = index > 0 ? processedMessages[index - 1] : null;
 
             return (
-              <div
-                key={msg._id || `msg-${index}`}
-                className={`flex ${
-                  isUserMessage ? "justify-end" : "justify-start"
-                }`}
-              >
+              <div key={msg._id || msg.tempId || `msg-${index}`}>
+                {renderDateSeparator(msg, prevMsg)}
+
                 <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
-                    isUserMessage
-                      ? "bg-blue-500 text-white rounded-br-none"
-                      : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none"
+                  className={`flex ${
+                    msg.isUserMessage ? "justify-end" : "justify-start"
                   }`}
                 >
-                  {isGroup && !isUserMessage && (
-                    <p className="text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">
-                      {senderName}
-                    </p>
-                  )}
-
-                  {msg.text && <p className="text-sm mb-2">{msg.text}</p>}
-
-                  {msg.fileUrl && (
-                    <div className="mb-2">
-                      <FilePreview
-                        fileUrl={msg.fileUrl}
-                        fileName={msg.fileName}
-                        fileType={msg.fileType}
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-end gap-1 mt-1">
-                    <p
-                      className={`text-xs ${
-                        isUserMessage
-                          ? "text-blue-100"
-                          : "text-gray-500 dark:text-gray-400"
-                      }`}
-                    >
-                      {formatTime(msg.timestamp || msg.createdAt || new Date())}
-                    </p>
-                    {isUserMessage && (
-                      <MessageStatus
-                        status={msg.status}
-                        readAt={msg.readAt}
-                        readBy={msg.readBy}
-                      />
+                  <div
+                    className={`rounded-lg p-3 max-w-[75%] ${
+                      msg.isUserMessage
+                        ? "bg-blue-600 text-white rounded-br-none"
+                        : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none"
+                    }`}
+                  >
+                    {isGroup && !msg.isUserMessage && (
+                      <p className="text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">
+                        {getSenderName(msg.sender)}
+                      </p>
                     )}
+
+                    {msg.fileUrl && (
+                      <div className="mb-2">
+                        <FilePreview
+                          fileUrl={msg.fileUrl}
+                          fileName={msg.fileName}
+                          fileType={msg.fileType}
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex items-end gap-1">
+                      {msg.text && (
+                        <p className="text-sm mr-2 break-words">{msg.text}</p>
+                      )}
+
+                      <div className="flex items-center ml-1 whitespace-nowrap self-end">
+                        <span
+                          className={`text-xs ${
+                            msg.isUserMessage
+                              ? "text-gray-300"
+                              : "text-gray-500 dark:text-gray-400"
+                          }`}
+                        >
+                          {formatTime(
+                            msg.timestamp || msg.createdAt || new Date()
+                          )}
+                        </span>
+
+                        {msg.isUserMessage && (
+                          <div className="ml-1">
+                            <MessageStatus
+                              status={msg.status}
+                              readAt={msg.readAt}
+                              readBy={msg.readBy}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             );
           })}
           <div ref={messagesEndRef} />
+          {isBlocked && (
+            <div className="bg-red-100 text-red-600 border-l-4 border-red-500 p-4 rounded-md shadow-md">
+              <h1 className="text-lg font-semibold">User Blocked by You</h1>
+              <p className="text-sm">Unblock the user to continue chatting.</p>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import EmojiPicker from "emoji-picker-react";
-import { Theme } from 'emoji-picker-react';
-import { FileIcon, Send, Smile } from "lucide-react";
+import {  Paperclip, Send, Smile } from "lucide-react";
 import { useTheme } from "../context/ThemeContex";
 
 const MessageInput = ({
@@ -109,13 +108,13 @@ const MessageInput = ({
             : "text-blue-500 hover:text-blue-600"
         }`}
       >
-        <FileIcon className="w-6 h-6" />
+        <Paperclip className="w-6 h-6 -rotate-45" />
       </button>
 
       <button
         type="submit"
         disabled={!message.trim()}
-        className={`px-4 py-2 cursor-pointer rounded-full ml-2 ${
+        className={`px-4 py-2 cursor- rounded-full ml-2 ${
           darkMode ? "bg-blue-600 text-white" : "bg-blue-500 text-white"
         }`}
       >

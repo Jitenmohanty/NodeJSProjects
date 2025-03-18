@@ -2,7 +2,6 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
 import http from "http";
 import { Server } from "socket.io";
 import multer from "multer";
@@ -11,7 +10,6 @@ import fs from "fs";
 import dotenv from "dotenv";
 import { User } from "./models/userSchema.js";
 import { Message } from "./models/messageSchema.js";
-import { register, Login, getUsers } from "./controllers/userController.js";
 import { uploadFile, fileFilter } from "./middleware/fileUploadMiddleware.js";
 import {
   getMessageById,
@@ -25,6 +23,7 @@ dotenv.config();
 import { fileURLToPath } from "url";
 import { GroupMessage } from "./models/groupMessageSchema.js";
 import { Group } from "./models/groupSchema.js";
+import { authenticateToken } from "./middleware/authMiddleware.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -69,47 +68,48 @@ mongoose.connect(`${process.env.MONGODB_URI}`);
 // File upload route
 app.post("/upload", upload.single("file"), uploadFile);
 
-// Authentication Middleware
-const authenticateToken = (req, res, next) => {
-  const token = req.headers["authorization"]?.split(" ")[1];
-  if (!token) return res.sendStatus(401);
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
-    req.user = user;
-    next();
-  });
-};
-
+import userAuth from "./routes/auth.js"
 // Auth Routes
-app.post("/register", register);
+app.use("/users", userAuth);
 
-app.post("/login", Login);
-
-app.get("/validate-token", async (req, res) => {
+export const ValidateToken = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return res.status(401).json({ error: "Unauthorized: No token provided" });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id);
-
-    // Update user's online status on token validation
-    if (user) {
-      await User.findByIdAndUpdate(decoded.id, { online: true });
-      io.emit("user_status_change", { userId: decoded.id, online: true });
+    if (!decoded?.id) {
+      return res.status(401).json({ error: "Unauthorized: Invalid token" });
     }
 
-    res.json({ user: { id: decoded.id } });
+    const user = await User.findById(decoded.id).select("_id online").lean();
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Update online status and return updated user
+    const updatedUser = await User.findByIdAndUpdate(
+      decoded.id,
+      { online: true },
+      { new: true} // Return updated fields only
+    ).lean();
+
+    console.log(updatedUser)
+
+    io.emit("user_status_change", { userId: decoded.id, online: true });
+
+    res.json({ user: {id:decoded.id,...updatedUser} });
   } catch (error) {
+    console.error("Token validation error:", error);
     res.status(401).json({ error: "Invalid or expired token" });
   }
-});
+}
+
+app.get("/validate-token", ValidateToken);
 
 // Chat Routes
-app.get("/users", authenticateToken, getUsers);
 
 app.get("/messages/:userId", authenticateToken, getMessageById);
 
@@ -207,25 +207,25 @@ app.get("/groups/:groupId/messages", authenticateToken, async (req, res) => {
 app.get("/groups/unread", authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    
+
     // Find groups the user is a member of
     const userGroups = await Group.find({ members: userId });
-    
+
     // For each group, count messages not read by this user
     const unreadCounts = await Promise.all(
       userGroups.map(async (group) => {
         const count = await GroupMessage.countDocuments({
           group: group._id,
-          'readBy.user': { $ne: userId }
+          "readBy.user": { $ne: userId },
         });
-        
+
         return {
           groupId: group._id,
-          count
+          count,
         };
       })
     );
-    
+
     res.json(unreadCounts);
   } catch (error) {
     console.error("Error fetching unread group messages:", error);
@@ -363,93 +363,96 @@ io.on("connection", (socket) => {
     socket.leave(`group:${groupId}`);
   });
 
-// Add this improved handler to your socket.io connection block in server.js
+  // Add this improved handler to your socket.io connection block in server.js
 
-socket.on("send_group_message", async (data) => {
-  try {
-    const { groupId, senderId, text, fileUrl, fileName, fileType } = data;
+  socket.on("send_group_message", async (data) => {
+    try {
+      const { groupId, senderId, text, fileUrl, fileName, fileType } = data;
 
-    const group = await Group.findById(groupId);
-    if (!group || !group.members.includes(senderId)) {
-      throw new Error("Not a member of this group");
+      const group = await Group.findById(groupId);
+      if (!group || !group.members.includes(senderId)) {
+        throw new Error("Not a member of this group");
+      }
+
+      // Create new message
+      const message = new GroupMessage({
+        group: groupId,
+        sender: senderId,
+        text: text || "",
+        fileUrl,
+        fileName,
+        fileType,
+        readBy: [{ user: senderId }], // Mark as read by sender
+      });
+
+      await message.save();
+
+      // Populate sender info for the response
+      const populatedMessage = await GroupMessage.findById(
+        message._id
+      ).populate("sender", "name email");
+
+      // Send to all group members
+      const onlineGroupMembers = group.members.filter(
+        (memberId) =>
+          memberId.toString() !== senderId.toString() &&
+          connectedUsers.has(memberId.toString())
+      );
+
+      // Emit to the group channel for clients currently viewing the group
+      io.to(`group:${groupId}`).emit("receive_group_message", {
+        message: populatedMessage,
+      });
+
+      // Also send individual notifications to online group members who might not be in the group channel
+      for (const memberId of onlineGroupMembers) {
+        const memberSocketId = connectedUsers.get(memberId.toString());
+        if (memberSocketId) {
+          // Emit a specialized notification for unread count updates
+          io.to(memberSocketId).emit("group_message_notification", {
+            messageId: message._id,
+            groupId: groupId,
+            sender: {
+              _id: senderId,
+              name: (await User.findById(senderId).select("name")).name,
+            },
+            text: text,
+            timestamp: message.timestamp,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error sending group message:", error);
+      socket.emit("group_message_error", { error: "Failed to send message" });
     }
+  });
 
-    // Create new message
-    const message = new GroupMessage({
-      group: groupId,
-      sender: senderId,
-      text: text || "",
-      fileUrl,
-      fileName,
-      fileType,
-      readBy: [{ user: senderId }], // Mark as read by sender
-    });
+  // Improve the group_message_read handler
+  socket.on("group_message_read", async ({ messageId, userId, groupId }) => {
+    try {
+      const message = await GroupMessage.findById(messageId);
+      if (!message) {
+        return;
+      }
 
-    await message.save();
+      // Check if user already read this message
+      if (!message.readBy.some((read) => read.user.toString() === userId)) {
+        // Add user to readBy array with timestamp
+        message.readBy.push({ user: userId, readAt: new Date() });
+        await message.save();
 
-    // Populate sender info for the response
-    const populatedMessage = await GroupMessage.findById(message._id)
-      .populate("sender", "name email");
-
-    // Send to all group members
-    const onlineGroupMembers = group.members.filter(memberId => 
-      memberId.toString() !== senderId.toString() && connectedUsers.has(memberId.toString())
-    );
-
-    // Emit to the group channel for clients currently viewing the group
-    io.to(`group:${groupId}`).emit("receive_group_message", {
-      message: populatedMessage,
-    });
-
-    // Also send individual notifications to online group members who might not be in the group channel
-    for (const memberId of onlineGroupMembers) {
-      const memberSocketId = connectedUsers.get(memberId.toString());
-      if (memberSocketId) {
-        // Emit a specialized notification for unread count updates
-        io.to(memberSocketId).emit("group_message_notification", {
-          messageId: message._id,
-          groupId: groupId,
-          sender: {
-            _id: senderId,
-            name: (await User.findById(senderId).select("name")).name
-          },
-          text: text,
-          timestamp: message.timestamp
+        // Notify group members about read status
+        io.to(`group:${groupId}`).emit("group_message_status_update", {
+          messageId,
+          groupId,
+          readBy: message.readBy,
+          userId,
         });
       }
+    } catch (error) {
+      console.error("Error marking group message as read:", error);
     }
-  } catch (error) {
-    console.error("Error sending group message:", error);
-    socket.emit("group_message_error", { error: "Failed to send message" });
-  }
-});
-
-// Improve the group_message_read handler
-socket.on("group_message_read", async ({ messageId, userId, groupId }) => {
-  try {
-    const message = await GroupMessage.findById(messageId);
-    if (!message) {
-      return;
-    }
-    
-    // Check if user already read this message
-    if (!message.readBy.some(read => read.user.toString() === userId)) {
-      // Add user to readBy array with timestamp
-      message.readBy.push({ user: userId, readAt: new Date() });
-      await message.save();
-      
-      // Notify group members about read status
-      io.to(`group:${groupId}`).emit("group_message_status_update", {
-        messageId,
-        groupId,
-        readBy: message.readBy,
-        userId
-      });
-    }
-  } catch (error) {
-    console.error("Error marking group message as read:", error);
-  }
-});
+  });
 
   socket.on("group_message_read", async ({ messageId, userId, groupId }) => {
     try {

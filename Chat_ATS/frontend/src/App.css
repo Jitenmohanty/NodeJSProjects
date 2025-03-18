@@ -1,0 +1,42 @@
+:root {
+    --color-light: #f3e5c3; /* Default light color */
+    --color-dark: #174e4f; /* Default dark color */
+  }
+  
+  body {
+    background-color: var(--color-light);
+    color: var(--color-dark);
+  }
+  
+  .dark body {
+    background-color: var(--color-dark);
+    color: var(--color-light);
+  }
+
+  /* Stylish Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px; /* Thin scrollbar */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent; /* Transparent track */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #9ca3af; /* Soft gray color */
+  border-radius: 10px; /* Rounded edges */
+  transition: background 0.3s ease-in-out;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6b7280; /* Darker gray on hover */
+}
+
+/* Dark Mode Scrollbar */
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4b5563; /* Dark gray in dark mode */
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #374151; /* Darker on hover */
+}

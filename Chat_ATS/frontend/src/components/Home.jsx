@@ -3,7 +3,7 @@ import { MessageCircle } from "lucide-react";
 import ChatInterface from "./ChatInterface";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContex";
-import { useGroup } from "../context/GroupContext"; // Import useGroup
+import { useGroup } from "../context/GroupContext";
 import axios from "axios";
 
 const Home = () => {
@@ -11,15 +11,14 @@ const Home = () => {
   const [unreadMessages, setUnreadMessages] = useState({});
   
   const { user, socket, fetchUsers, setUsers } = useAuth();
-  const { unreadGroupMessages } = useGroup(); // Get unread group messages
+  const { unreadGroupMessages, setUnreadGroupMessages } = useGroup();
   
-    console.log(unreadGroupMessages,"unreadmessage")
-    console.log(unreadGroupMessages,"unreadMessage group")
-
   const { darkMode } = useTheme();
 
   useEffect(() => {
     const fetchUnreadmessage = async () => {
+      if (!user) return;
+      
       try {
         const { data } = await axios.get("http://localhost:3000/unread");
 
@@ -30,7 +29,7 @@ const Home = () => {
             unreadCount[msg.sender] = (unreadCount[msg.sender] || 0) + 1;
           });
 
-          setUnreadMessages(unreadCount); // Set unread messages state
+          setUnreadMessages(unreadCount);
         } else {
           setUnreadMessages({});
         }
@@ -38,18 +37,38 @@ const Home = () => {
         console.log(error.message);
       }
     };
+    
     fetchUnreadmessage();
-  }, []);
+  }, [user]);
 
   // Handle socket events for messages and user status
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !user) return;
 
     const handleReceiveMessage = (data) => {
-      if (!openChat || data.message.sender !== user?.id) {
+      if (!openChat || data.message.sender !== user.id) {
         setUnreadMessages((prev) => ({
           ...prev,
           [data.message.sender]: (prev[data.message.sender] || 0) + 1,
+        }));
+      }
+    };
+
+    const handleGroupMessage = (data) => {
+      console.log("enter")
+      if ( data.message.sender._id !== user.id) {
+        setUnreadGroupMessages((prev) => ({
+          ...prev,
+          [data.message.group]: (prev[data.message.group] || 0) + 1,
+        }));
+      }
+    };
+
+    const handleGroupNotification = (data) => {
+      if ( data.sender._id !== user.id) {
+        setUnreadGroupMessages((prev) => ({
+          ...prev,
+          [data.groupId]: (prev[data.groupId] || 0) + 1,
         }));
       }
     };
@@ -70,19 +89,19 @@ const Home = () => {
     };
 
     socket.on("receive_message", handleReceiveMessage);
+    socket.on("receive_group_message", handleGroupMessage);
+    socket.on("group_notification", handleGroupNotification);
     socket.on("user_status_change", handleUserStatus);
     socket.on("users_status_update", handleUsersStatusUpdate);
 
     // Emit user_connected when socket is ready
-    if (user) {
-      socket.emit("user_connected", user.id);
-    }
+    socket.emit("user_connected", user.id);
 
     return () => {
-      if (user) {
-        socket.emit("user_disconnected", user.id);
-      }
+      socket.emit("user_disconnected", user.id);
       socket.off("receive_message", handleReceiveMessage);
+      socket.off("receive_group_message", handleGroupMessage);
+      socket.off("group_notification", handleGroupNotification);
       socket.off("user_status_change", handleUserStatus);
       socket.off("users_status_update", handleUsersStatusUpdate);
     };
@@ -90,10 +109,8 @@ const Home = () => {
 
   // Fetch initial users list
   useEffect(() => {
-    if (!user) {
       fetchUsers();
-    }
-  }, [user, fetchUsers]);
+  }, []);
 
   // Calculate total unread direct messages
   const directMessagesUnread = Object.values(unreadMessages).reduce(
@@ -109,13 +126,6 @@ const Home = () => {
   
   // Calculate total unread messages (direct + group)
   const totalUnreadMessages = directMessagesUnread + groupMessagesUnread;
-
-  // Log for debugging
-  useEffect(() => {
-    console.log("Direct unread:", directMessagesUnread);
-    console.log("Group unread:", groupMessagesUnread);
-    console.log("Total unread:", totalUnreadMessages);
-  }, [directMessagesUnread, groupMessagesUnread, totalUnreadMessages]);
 
   const handleOpenChat = () => {
     setOpenChat(true);
@@ -166,7 +176,9 @@ const Home = () => {
           setOpenChat={handleCloseChat}
           unreadMessages={unreadMessages}
           setUnreadMessages={setUnreadMessages}
-          unreadGroupMessages={unreadGroupMessages} // Pass unread group messages
+          unreadGroupMessages={unreadGroupMessages}
+          setUnreadGroupMessages={setUnreadGroupMessages}
+          totalUnreadMessages={totalUnreadMessages}
         />
       )}
     </div>

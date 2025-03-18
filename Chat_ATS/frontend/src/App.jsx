@@ -7,11 +7,12 @@ import Home from "./components/Home";
 import { ThemeProvider, useTheme } from "./context/ThemeContex";
 import ThemeToggle from "./components/ThemeToggle";
 import { GroupProvider } from "./context/GroupContext";
+import "./App.css"
 
 // Lazy load components for better performance
 const AuthComponent = React.lazy(() => import("./components/AuthComponent"));
 // const ChatInterface = React.lazy(() => import('./components/ChatInterface'));
-
+   
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();

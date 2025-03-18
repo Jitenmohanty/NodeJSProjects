@@ -30,11 +30,33 @@ export const useGroupSocket = (userId, updateUnreadCount) => {
       socketRef.current.on('receive_group_message', (data) => {
         console.log('Received group message:', data);
         // Only update unread count if this user isn't the sender
-        if (data.message && data.message.sender !== userId) {
+        if (data.message && data.message.sender._id !== userId) {
           const groupId = data.message.group;
           if (updateUnreadCount && groupId) {
             console.log(`Updating unread count for group ${groupId}`);
             updateUnreadCount(groupId, (prev) => (prev || 0) + 1);
+          }
+        }
+      });
+      
+      // Add handler for group notifications (when user is not actively in the group)
+      socketRef.current.on('group_message_notification', (data) => {
+        console.log('Received group notification:', data);
+        if (data.sender && data.sender._id !== userId && data.groupId) {
+          if (updateUnreadCount && typeof updateUnreadCount === 'function') {
+            console.log(`Updating unread count for group ${data.groupId} from notification`);
+            updateUnreadCount(data.groupId, (prev) => (prev || 0) + 1);
+          }
+        }
+      });
+      
+      // Handle the alternative event name used in some parts of the code
+      socketRef.current.on('group_notification', (data) => {
+        console.log('Received group notification (alt):', data);
+        if (data.sender && data.sender._id !== userId && data.groupId) {
+          if (updateUnreadCount && typeof updateUnreadCount === 'function') {
+            console.log(`Updating unread count for group ${data.groupId} from notification (alt)`);
+            updateUnreadCount(data.groupId, (prev) => (prev || 0) + 1);
           }
         }
       });

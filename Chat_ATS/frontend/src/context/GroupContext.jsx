@@ -25,7 +25,7 @@ export const GroupProvider = ({ children }) => {
       
       // Fetch unread group messages
       const unreadResponse = await axios.get('http://localhost:3000/groups/unread');
-      console.log("Unread group messages:", unreadResponse.data);
+      //console.log("Unread group messages:", unreadResponse.data);
       
       // Process unread messages
       const unreadCounts = {};
@@ -37,7 +37,7 @@ export const GroupProvider = ({ children }) => {
       
       setUnreadGroupMessages(unreadCounts);
     } catch (error) {
-      console.error('Failed to fetch groups:', error);
+      //console.error('Failed to fetch groups:', error);
     } finally {
       setLoading(false);
     }
@@ -54,7 +54,7 @@ export const GroupProvider = ({ children }) => {
       setGroups(prev => [...prev, response.data]);
       return { success: true, group: response.data };
     } catch (error) {
-      console.error("Group creation failed:", error);
+      //console.error("Group creation failed:", error);
       return {
         success: false,
         error: error.response?.data?.error || 'Failed to create group'
@@ -89,6 +89,7 @@ export const GroupProvider = ({ children }) => {
   
   const setActiveGroup = useCallback((groupId) => {
     setActiveGroupId(groupId);
+    console.log("active")
     // When a group becomes active, clear its unread count
     if (groupId) {
       clearUnreadCount(groupId);
@@ -103,7 +104,6 @@ export const GroupProvider = ({ children }) => {
     const handleReceiveGroupMessage = (data) => {
       if (data.message && data.message.group) {
         const groupId = data.message.group;
-        
         // Only update count if this message is not from current user and user is not viewing this group
         if (data.message.sender !== user.id && activeGroupId !== groupId) {
           updateUnreadCount(groupId, count => (count || 0) + 1);
@@ -113,11 +113,12 @@ export const GroupProvider = ({ children }) => {
     
     // Special notification for when user is not in the group chat but online
     const handleGroupNotification = (data) => {
+      console.log(data)
       if (data.groupId) {
         // Only increment if not actively viewing this group
         if (activeGroupId !== data.groupId) {
           updateUnreadCount(data.groupId, count => (count || 0) + 1);
-          
+          console.log("hii it enter")
           // Optionally show a browser notification
           if (Notification.permission === "granted") {
             const group = getGroupById(data.groupId);
@@ -159,6 +160,7 @@ export const GroupProvider = ({ children }) => {
       createGroup,
       getGroupById,
       unreadGroupMessages,
+      setUnreadGroupMessages,
       updateUnreadCount,
       clearUnreadCount,
       activeGroupId,
