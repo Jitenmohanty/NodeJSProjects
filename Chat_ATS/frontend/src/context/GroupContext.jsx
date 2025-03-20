@@ -9,7 +9,30 @@ export const GroupProvider = ({ children }) => {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [unreadGroupMessages, setUnreadGroupMessages] = useState({});
-  const [activeGroupId, setActiveGroupId] = useState(null); // Track which group the user is viewing
+  const [activeGroupId, setActiveGroupId] = useState(null);
+  // Add state for authorized groups (groups the user has already entered a password for)
+  const [authorizedGroups, setAuthorizedGroups] = useState([]);
+
+  // Load authorized groups from localStorage when component mounts
+  useEffect(() => {
+    if (user) {
+      try {
+        const savedAuthorizedGroups = localStorage.getItem(`authorized_groups_${user.id}`);
+        if (savedAuthorizedGroups) {
+          setAuthorizedGroups(JSON.parse(savedAuthorizedGroups));
+        }
+      } catch (error) {
+        console.error('Error loading authorized groups from localStorage:', error);
+      }
+    }
+  }, [user]);
+
+  // Save authorized groups to localStorage whenever it changes
+  useEffect(() => {
+    if (user && authorizedGroups.length > 0) {
+      localStorage.setItem(`authorized_groups_${user.id}`, JSON.stringify(authorizedGroups));
+    }
+  }, [user, authorizedGroups]);
 
   const fetchGroups = useCallback(async () => {
     if (!user) {
@@ -20,12 +43,15 @@ export const GroupProvider = ({ children }) => {
     
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:3000/groups');
+      const response = await axios.get('http://localhost:3000/groups', {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      });
       setGroups(response.data);
       
       // Fetch unread group messages
-      const unreadResponse = await axios.get('http://localhost:3000/group-messages/unread');
-      //console.log("Unread group messages:", unreadResponse.data);
+      const unreadResponse = await axios.get('http://localhost:3000/group-messages/unread', {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      });
       
       // Process unread messages
       const unreadCounts = {};
@@ -37,24 +63,32 @@ export const GroupProvider = ({ children }) => {
       
       setUnreadGroupMessages(unreadCounts);
     } catch (error) {
-      //console.error('Failed to fetch groups:', error);
+      console.error('Failed to fetch groups:', error);
     } finally {
       setLoading(false);
     }
   }, [user]);
 
-  const createGroup = async (name, description, members) => {
+  const createGroup = async (name, description, members, password = "") => {
     try {
       const response = await axios.post('http://localhost:3000/groups', {
         name,
         description,
-        members
+        members,
+        password
+      }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
       
       setGroups(prev => [...prev, response.data]);
+      
+      // If user creates a group, they are automatically authorized for it
+      if (password) {
+        addAuthorizedGroup(response.data._id);
+      }
+      
       return { success: true, group: response.data };
     } catch (error) {
-      //console.error("Group creation failed:", error);
       return {
         success: false,
         error: error.response?.data?.error || 'Failed to create group'
@@ -89,12 +123,48 @@ export const GroupProvider = ({ children }) => {
   
   const setActiveGroup = useCallback((groupId) => {
     setActiveGroupId(groupId);
-    console.log("active")
+    
     // When a group becomes active, clear its unread count
     if (groupId) {
       clearUnreadCount(groupId);
     }
   }, [clearUnreadCount]);
+
+  // Check if a user is authorized for a group
+  const isAuthorizedForGroup = useCallback((groupId) => {
+    return authorizedGroups.includes(groupId);
+  }, [authorizedGroups]);
+
+  // Add a group to the authorized list
+  const addAuthorizedGroup = useCallback((groupId) => {
+    setAuthorizedGroups(prev => {
+      if (!prev.includes(groupId)) {
+        return [...prev, groupId];
+      }
+      return prev;
+    });
+  }, []);
+
+  // Verify group password and add to authorized groups if successful
+  const verifyGroupPassword = useCallback(async (groupId, password) => {
+    try {
+      const response = await axios.post(`http://localhost:3000/groups/${groupId}/verify-password`, 
+        { password }, 
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }}
+      );
+
+      if (response.data.message === "Password verified. You can now chat.") {
+        addAuthorizedGroup(groupId);
+        return { success: true };
+      }
+      return { success: false, error: "Verification failed" };
+    } catch (err) {
+      return { 
+        success: false, 
+        error: err.response?.data?.error || "Incorrect password" 
+      };
+    }
+  }, [addAuthorizedGroup]);
 
   // Listen for socket events
   useEffect(() => {
@@ -113,12 +183,11 @@ export const GroupProvider = ({ children }) => {
     
     // Special notification for when user is not in the group chat but online
     const handleGroupNotification = (data) => {
-      console.log(data)
       if (data.groupId) {
         // Only increment if not actively viewing this group
         if (activeGroupId !== data.groupId) {
           updateUnreadCount(data.groupId, count => (count || 0) + 1);
-          console.log("hii it enter")
+          
           // Optionally show a browser notification
           if (Notification.permission === "granted") {
             const group = getGroupById(data.groupId);
@@ -164,7 +233,11 @@ export const GroupProvider = ({ children }) => {
       updateUnreadCount,
       clearUnreadCount,
       activeGroupId,
-      setActiveGroup
+      setActiveGroup,
+      // Add new functions for password management
+      isAuthorizedForGroup,
+      addAuthorizedGroup,
+      verifyGroupPassword
     }}>
       {children}
     </GroupContext.Provider>

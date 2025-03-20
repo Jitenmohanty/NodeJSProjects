@@ -18,23 +18,23 @@ const ChatHeader = React.memo(
     const { darkMode } = useTheme();
     const [showMenu, setShowMenu] = useState(false);
     const [openProfile, setOpenProfile] = useState(false);
-    const [isBlocked,setIsBlocked] = useState(false)
-
-    
-
+    const [isBlocked, setIsBlocked] = useState(false);
     const { BlockUser, UnblockUser, user } = useAuth();
 
-     useEffect(() => {
-        const checkIfUserIsBlocked = () => {
-          if (user?.blockedUsers?.includes(selectedUser?._id)) {
-            setIsBlocked(true);
-          } else {
-            setIsBlocked(false);
-          }
-        };
-          checkIfUserIsBlocked();
-      }, [user, selectedUser]); // Re-run when user or selectedUser changes
-    
+
+    // Determine which entity is selected (user or group)
+    const entity = selectedUser || group;
+
+    useEffect(() => {
+      const checkIfUserIsBlocked = () => {
+        if (selectedUser && user?.blockedUsers?.includes(selectedUser?._id)) {
+          setIsBlocked(true);
+        } else {
+          setIsBlocked(false);
+        }
+      };
+      checkIfUserIsBlocked();
+    }, [user, selectedUser]); // Re-run when user or selectedUser changes
 
     const handleBlockUser = async (id) => {
       await BlockUser(id);
@@ -53,22 +53,19 @@ const ChatHeader = React.memo(
       }
     }, [onBack, setSelectedUser]);
 
-    // Determine which entity is selected (user or group)
-    const isChat = selectedUser || group;
-
     // Get avatar, name, and status based on what's selected
     const getAvatar = () => {
       if (group)
         return (
           group.avatar ||
-           "https://images.pexels.com/photos/1435517/pexels-photo-1435517.jpeg?auto=compress&cs=tinysrgb&w=600"
+          "https://images.pexels.com/photos/1435517/pexels-photo-1435517.jpeg?auto=compress&cs=tinysrgb&w=600"
         );
       if (selectedUser)
         return (
           selectedUser.profilePicture ||
-           "https://images.pexels.com/photos/1435517/pexels-photo-1435517.jpeg?auto=compress&cs=tinysrgb&w=600"
+          "https://images.pexels.com/photos/1435517/pexels-photo-1435517.jpeg?auto=compress&cs=tinysrgb&w=600"
         );
-      return  "https://images.pexels.com/photos/1435517/pexels-photo-1435517.jpeg?auto=compress&cs=tinysrgb&w=600";
+      return "https://images.pexels.com/photos/1435517/pexels-photo-1435517.jpeg?auto=compress&cs=tinysrgb&w=600";
     };
 
     const getName = () => {
@@ -84,9 +81,10 @@ const ChatHeader = React.memo(
     };
 
     const handleProfileClick = () => {
-      if (!selectedUser) return;
-      setShowMenu(false);
-      setOpenProfile(true);
+      if (entity) {
+        setShowMenu(false);
+        setOpenProfile(true);
+      }
     };
 
     const toggleMenu = (e) => {
@@ -105,7 +103,7 @@ const ChatHeader = React.memo(
         {/* Left Section: Back Button and User/Group Info */}
         <div className="flex items-center">
           {/* Back Button */}
-          {isChat && (
+          {entity && (
             <button
               onClick={handleBack}
               className="text-white hover:text-gray-200 mr-3"
@@ -115,88 +113,90 @@ const ChatHeader = React.memo(
           )}
 
           {/* User/Group Info with Avatar */}
-          <div className="flex items-center" onClick={handleProfileClick}>
-            <div className="relative cursor-pointer">
-              <img
-                src={getAvatar()}
-                alt={getName()}
-                className="w-10 h-10 rounded-full object-cover border-2 border-white"
-              />
-              {selectedUser && selectedUser.online && (
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-              )}
-            </div>
+          {entity && (
+            <div className="flex items-center cursor-pointer" onClick={handleProfileClick}>
+              <div className="relative">
+                <img
+                  src={getAvatar()}
+                  alt={getName()}
+                  className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                />
+                {selectedUser && selectedUser.online && (
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                )}
+              </div>
 
-            <div className="ml-3 cursor-pointer">
-              <h2 className="text-white font-medium">{getName()}</h2>
-              <p
-                className={`text-xs ${
-                  selectedUser && selectedUser.online
-                    ? "text-green-300"
-                    : "text-gray-200"
-                }`}
-              >
-                {getStatus()}
-              </p>
+              <div className="ml-3">
+                <h2 className="text-white font-medium">{getName()}</h2>
+                <p
+                  className={`text-xs ${
+                    selectedUser && selectedUser.online
+                      ? "text-green-300"
+                      : "text-gray-200"
+                  }`}
+                >
+                  {getStatus()}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Right Section: More Options and Close Button */}
         <div className="flex items-center space-x-2">
           {/* Three-dot Menu Button */}
-          <div className="relative">
-            <button
-              onClick={toggleMenu}
-              className="text-white hover:text-gray-200 p-1 cursor-pointer"
-            >
-              <MoreVertical className="w-5 h-5" />
-            </button>
+          {entity && (
+            <div className="relative">
+              <button
+                onClick={toggleMenu}
+                className="text-white hover:text-gray-200 p-1 cursor-pointer"
+              >
+                <MoreVertical className="w-5 h-5" />
+              </button>
 
-            {/* Dropdown Menu */}
-            {showMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10">
-                <ul className="py-1">
-                  <li
-                    onClick={handleProfileClick}
-                    className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center cursor-pointer"
-                  >
-                    <Info className="w-4 h-4 mr-2" />
-                    <span>View Info</span>
-                  </li>
-                  <li className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center cursor-pointer">
-                    <Bell className="w-4 h-4 mr-2" />
-                    <span>Mute Notifications</span>
-                  </li>
-                  <li className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center cursor-pointer">
-                    <Delete className="w-4 h-4 mr-2" />
-                    <span>Clear Chat</span>
-                  </li>
-                  {isBlocked ? (
+              {/* Dropdown Menu */}
+              {showMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10">
+                  <ul className="py-1">
                     <li
-                      onClick={() =>
-                        selectedUser && handleUnBlockUser(selectedUser._id)
-                      }
-                      className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center text-green-500 cursor-pointer"
+                      onClick={handleProfileClick}
+                      className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center cursor-pointer"
                     >
-                      <User className="w-4 h-4 mr-2" />
-                      <span>Unblock User</span>
+                      <Info className="w-4 h-4 mr-2" />
+                      <span>View Info</span>
                     </li>
-                  ) : (
-                    <li
-                      onClick={() =>
-                        selectedUser && handleBlockUser(selectedUser._id)
-                      }
-                      className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center text-red-500 cursor-pointer"
-                    >
-                      <UserX className="w-4 h-4 mr-2" />
-                      <span>Block User</span>
+                    <li className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center cursor-pointer">
+                      <Bell className="w-4 h-4 mr-2" />
+                      <span>Mute Notifications</span>
                     </li>
-                  )}
-                </ul>
-              </div>
-            )}
-          </div>
+                    <li className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center cursor-pointer">
+                      <Delete className="w-4 h-4 mr-2" />
+                      <span>Clear Chat</span>
+                    </li>
+                    {selectedUser && (
+                      isBlocked ? (
+                        <li
+                          onClick={() => handleUnBlockUser(selectedUser._id)}
+                          className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center text-green-500 cursor-pointer"
+                        >
+                          <User className="w-4 h-4 mr-2" />
+                          <span>Unblock User</span>
+                        </li>
+                      ) : (
+                        <li
+                          onClick={() => handleBlockUser(selectedUser._id)}
+                          className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center text-red-500 cursor-pointer"
+                        >
+                          <UserX className="w-4 h-4 mr-2" />
+                          <span>Block User</span>
+                        </li>
+                      )
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Close Chat Button */}
           <button
@@ -214,10 +214,12 @@ const ChatHeader = React.memo(
             onClick={() => setShowMenu(false)}
           ></div>
         )}
+
+        {/* Profile Modal */}
         <ProfileModal
           isOpen={openProfile}
           onClose={() => setOpenProfile(false)}
-          data={selectedUser}
+          data={entity}
         />
       </div>
     );
