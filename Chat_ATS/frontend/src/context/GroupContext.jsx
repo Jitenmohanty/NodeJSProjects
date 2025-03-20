@@ -24,7 +24,7 @@ export const GroupProvider = ({ children }) => {
       setGroups(response.data);
       
       // Fetch unread group messages
-      const unreadResponse = await axios.get('http://localhost:3000/groups/unread');
+      const unreadResponse = await axios.get('http://localhost:3000/group-messages/unread');
       //console.log("Unread group messages:", unreadResponse.data);
       
       // Process unread messages

@@ -9,7 +9,8 @@ const messageSchema = new mongoose.Schema({
     fileType: String,
     timestamp: { type: Date, default: Date.now },
     status: { type: String, enum: ['sent', 'delivered', 'read'], default: 'sent' },
-    readAt: { type: Date, default: null }
-  });
-  
-export const Message = mongoose.model('Message', messageSchema);
+    readAt: { type: Date, default: null },
+    clearedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] // Track users who cleared chat
+});
+
+export const Message = mongoose.model("Message", messageSchema);

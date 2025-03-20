@@ -20,7 +20,7 @@ const Home = () => {
       if (!user) return;
       
       try {
-        const { data } = await axios.get("http://localhost:3000/unread");
+        const { data } = await axios.get("http://localhost:3000/messages/unread");
 
         if (data.length > 0) {
           const unreadCount = {};

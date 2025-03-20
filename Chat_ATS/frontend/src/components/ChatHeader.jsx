@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   X,
   ArrowLeft,
@@ -7,6 +7,7 @@ import {
   Delete,
   Bell,
   Info,
+  User,
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContex";
 import ProfileModal from "./ProfileModal";
@@ -21,10 +22,21 @@ const ChatHeader = React.memo(
 
     
 
-    const { BlockUser, UnblockUser } = useAuth();
+    const { BlockUser, UnblockUser, user } = useAuth();
+
+     useEffect(() => {
+        const checkIfUserIsBlocked = () => {
+          if (user?.blockedUsers?.includes(selectedUser?._id)) {
+            setIsBlocked(true);
+          } else {
+            setIsBlocked(false);
+          }
+        };
+          checkIfUserIsBlocked();
+      }, [user, selectedUser]); // Re-run when user or selectedUser changes
+    
 
     const handleBlockUser = async (id) => {
-      console.log("object")
       await BlockUser(id);
     };
 
@@ -49,14 +61,14 @@ const ChatHeader = React.memo(
       if (group)
         return (
           group.avatar ||
-          "https://images.pexels.com/photos/752525/pexels-photo-752525.jpeg?auto=compress&cs=tinysrgb&w=600"
+           "https://images.pexels.com/photos/1435517/pexels-photo-1435517.jpeg?auto=compress&cs=tinysrgb&w=600"
         );
       if (selectedUser)
         return (
           selectedUser.profilePicture ||
-          "https://images.pexels.com/photos/752525/pexels-photo-752525.jpeg?auto=compress&cs=tinysrgb&w=600"
+           "https://images.pexels.com/photos/1435517/pexels-photo-1435517.jpeg?auto=compress&cs=tinysrgb&w=600"
         );
-      return "https://images.pexels.com/photos/752525/pexels-photo-752525.jpeg?auto=compress&cs=tinysrgb&w=600";
+      return  "https://images.pexels.com/photos/1435517/pexels-photo-1435517.jpeg?auto=compress&cs=tinysrgb&w=600";
     };
 
     const getName = () => {
@@ -167,7 +179,7 @@ const ChatHeader = React.memo(
                       }
                       className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center text-green-500 cursor-pointer"
                     >
-                      <UserCheck className="w-4 h-4 mr-2" />
+                      <User className="w-4 h-4 mr-2" />
                       <span>Unblock User</span>
                     </li>
                   ) : (

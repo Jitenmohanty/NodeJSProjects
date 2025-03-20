@@ -9,7 +9,10 @@ dotenv.config();
       const { name, email, password, nickname, phone, bio, gender } = req.body;
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      const profilePicture = req.file ? req.file.filename : null;
+      let profilePicture ;
+      if (req.file) {
+        profilePicture = `http://localhost:3000/uploads/${req.file.filename}`;
+      }
 
       const user = new User({
         name,
@@ -19,8 +22,9 @@ dotenv.config();
         phone,
         bio,
         gender,
-        profilePicture,
+        profilePicture:profilePicture,
       });
+
 
       await user.save();
       res.status(201).json({ success: true, message: "User registered successfully" });

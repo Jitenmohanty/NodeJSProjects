@@ -50,6 +50,7 @@ Chat_ATS/
 │   ├── controllers/       # API Controllers  
 │   ├── middleware/        # Auth & Upload Middleware  
 │   ├── routes/            # API Routes  
+|   |-- Socket/            #Socket handler
 │   ├── server.js          # Main Server File  
 │── frontend/              # React Application  
 │   ├── components/        # UI Components  

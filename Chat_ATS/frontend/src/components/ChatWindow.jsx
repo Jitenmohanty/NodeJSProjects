@@ -40,8 +40,8 @@ const ChatWindow = ({
       {/* Notification */}
       {notification && (
         <div
-          className={`fixed bottom-4 right-6 p-4 rounded-lg shadow-lg border-l-4 ${
-            darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800"
+          className={`fixed top-4 left-6 p-4 rounded-lg shadow-lg border-l-4 w-[30%] ${
+            darkMode ? "bg-gray-600 text-white" : "bg-white text-gray-800"
           } ${
             notification.type === "group"
               ? "border-green-500"

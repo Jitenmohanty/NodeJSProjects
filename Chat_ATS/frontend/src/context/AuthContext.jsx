@@ -100,7 +100,7 @@ export const AuthProvider = ({ children }) => {
         formPayload.append("profilePicture", profilePicture);
       }
 
-      await axios.post("http://localhost:3000/register", formPayload, {
+      await axios.post("http://localhost:3000/users/register", formPayload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -165,31 +165,64 @@ export const AuthProvider = ({ children }) => {
   };
 
   const BlockUser = async (id) => {
-    
     try {
-      console.log("object")
-      let token = localStorage.getItem("token")
+      console.log("Blocking user...");
+      let token = localStorage.getItem("token");
+  
       const response = await fetch(`http://localhost:3000/users/block/${id}`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
       });
+  
+      if (!response.ok) {
+        throw new Error("Failed to block user");
+      }
+  
       const data = await response.json();
+  
+      setUser((prev) => ({
+        ...prev,
+        blockedUsers: data.blockedUsers, // Updating blockedUsers correctly
+      }));
+  
+      console.log(data);
       alert(data.message);
     } catch (error) {
       console.error("Error blocking user:", error);
+      alert("Failed to block user. Please try again.");
     }
   };
   
+  
   const UnblockUser = async (id) => {
     try {
+      let token = localStorage.getItem("token");
+  
       const response = await fetch(`http://localhost:3000/users/unblock/${id}`, {
         method: "POST",
-        // headers: { Authorization: `Bearer ${user.token}` },
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
       });
+  
+      if (!response.ok) {
+        throw new Error("Failed to unblock user");
+      }
+  
       const data = await response.json();
+  
+      setUser((prev) => ({
+        ...prev,
+        blockedUsers: prev.blockedUsers.filter(userId => userId !== id) // Remove unblocked user from state
+      }));
+  
       alert(data.message);
     } catch (error) {
       console.error("Error unblocking user:", error);
+      alert("Failed to unblock user. Please try again.");
     }
   };
   

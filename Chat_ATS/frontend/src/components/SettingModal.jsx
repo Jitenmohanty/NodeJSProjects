@@ -191,16 +191,6 @@ const SettingsModal = ({ isOpen, onClose }) => {
           </div>
         </div>
       </div>
-            {/* Custom CSS to hide scrollbar */}
-            <style jsx>{`
-        .no-scrollbar {
-          scrollbar-width: none; /* Firefox */
-          -ms-overflow-style: none; /* IE and Edge */
-        }
-        .no-scrollbar::-webkit-scrollbar {
-          display: none; /* Chrome, Safari, and Opera */
-        `}
-      </style>
     </>
   );
 };

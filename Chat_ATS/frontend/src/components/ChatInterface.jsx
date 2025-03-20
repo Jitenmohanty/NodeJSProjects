@@ -58,7 +58,7 @@ const ChatInterface = ({
 
   const showNotification = (sender, text, type = "direct") => {
     if (typeof sender === "object" && sender._id === user.id) return;
-
+    console.log(sender,"sender")
     setNotification({
       sender: typeof sender === "string" ? sender : sender.name || "Unknown",
       text: text?.length > 30 ? text.substring(0, 30) + "..." : text || "New message",
@@ -232,7 +232,7 @@ const ChatInterface = ({
   const fetchGroupDetails = useCallback(async (groupId) => {
     try {
       const response = await axios.get(
-        `http://localhost:3000/groups/${groupId}/messages`
+        `http://localhost:3000/group-messages/${groupId}/messages`
       );
       setGroupData(response.data);
     } catch (error) {
@@ -296,7 +296,7 @@ const ChatInterface = ({
           });
         } else if (selectedGroup) {
           response = await axios.get(
-            `http://localhost:3000/groups/${selectedGroup._id}/messages`,
+            `http://localhost:3000/group-messages/${selectedGroup._id}/messages`,
             {
               params: { page: currentPage, limit: 20 },
             }
@@ -419,6 +419,10 @@ const ChatInterface = ({
       const timestamp = new Date().toISOString();
 
       if (selectedUser) {
+        if (user?.blockedUsers?.includes(selectedUser?._id)){
+          alert("You cannot send a message to a user you have blocked.");
+          return;
+        }
         const tempMessage = {
           sender: user.id,
           receiver: selectedUser._id,
@@ -479,7 +483,7 @@ const ChatInterface = ({
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/upload",
+        "http://localhost:3000/upload/file",
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },

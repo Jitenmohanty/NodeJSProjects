@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Check, FileIcon, FileText } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const UnifiedChatWindow = ({
   messages,
@@ -15,8 +16,7 @@ const UnifiedChatWindow = ({
   const [processedMessages, setProcessedMessages] = useState([]);
   const [isBlocked, setIsBlocked] = useState(false);
 
-  console.log(user);
-  console.log(selectedUser);
+  const {UnblockUser} = useAuth();
 
   useEffect(() => {
     const checkIfUserIsBlocked = () => {
@@ -26,9 +26,15 @@ const UnifiedChatWindow = ({
         setIsBlocked(false);
       }
     };
-
-    checkIfUserIsBlocked();
+    if (!isGroup) {
+      checkIfUserIsBlocked();
+    }
   }, [user, selectedUser]); // Re-run when user or selectedUser changes
+
+
+  const handleUnBlockUser = async (id) => {
+    await UnblockUser(id);
+  };
 
   // Process messages to ensure consistent format
   useEffect(() => {
@@ -273,9 +279,18 @@ const UnifiedChatWindow = ({
           })}
           <div ref={messagesEndRef} />
           {isBlocked && (
-            <div className="bg-red-100 text-red-600 border-l-4 border-red-500 p-4 rounded-md shadow-md">
-              <h1 className="text-lg font-semibold">User Blocked by You</h1>
-              <p className="text-sm">Unblock the user to continue chatting.</p>
+            <div className="flex justify-center">
+              <div className="bg-gray-700 w-[30%] text-gray-100 border border-gray-400 px-3 py-1 rounded-full flex justify-center items-center gap-2 shadow-sm">
+                <span className="text-sm font-medium">
+                  🚫 User Blocked by you
+                </span>
+                <button
+                  onClick={()=>handleUnBlockUser(selectedUser?._id)}
+                  className="bg-gray-500 text-white px-2 py-1 rounded-full text-xs hover:bg-gray-600 transition cursor-pointer"
+                >
+                  Unblock
+                </button>
+              </div>
             </div>
           )}
         </div>
