@@ -52,7 +52,7 @@ dotenv.config();
   
       const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
   
-      res.json({ token, user });
+      res.json({ token, user:{id:user._id,...user} });
   
     } catch (error) {
       res.status(500).json({ error: 'Error logging in' });

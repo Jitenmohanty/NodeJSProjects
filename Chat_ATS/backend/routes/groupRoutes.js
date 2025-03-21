@@ -5,8 +5,9 @@ import {
     deleteGroup, 
     getGroups, 
     updateGroup, 
-    addMemberToGroup, 
-    verifyGroupPassword
+    verifyGroupPassword,
+    addMembersToGroup,
+    removeMemberFromGroup
 } from "../controllers/groupController.js";
 
 const router = express.Router();
@@ -19,6 +20,7 @@ router.delete("/:groupId", authenticateToken, deleteGroup);
 
 // New Routes
 router.post("/:groupId/verify-password", authenticateToken, verifyGroupPassword);
-router.post("/add-member", authenticateToken, addMemberToGroup); // Admin can add members
+router.post("/add-member", authenticateToken, addMembersToGroup); // Admin can add members
+router.post("/remove-member", authenticateToken, removeMemberFromGroup);
 
 export default router;

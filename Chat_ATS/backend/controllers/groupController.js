@@ -112,32 +112,85 @@ export const verifyGroupPassword = async (req, res) => {
 };
 
 
-export const addMemberToGroup = async (req, res) => {
+export const addMembersToGroup = async (req, res) => {
     try {
-        const { groupId, userId } = req.body;
+        const { groupId, userIds } = req.body; // Accept an array of user IDs
+        
+        // Validate input
+        if (!groupId) {
+            return res.status(400).json({ message: "Group ID is required" });
+        }
+        
+        if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+            return res.status(400).json({ message: "At least one user ID is required" });
+        }
+
         const group = await Group.findById(groupId);
-
         if (!group) {
-            return res.status(404).json({ error: "Group not found" });
+            return res.status(404).json({ message: "Group not found" });
         }
 
-        // Check if the requester is an admin
+        console.log(group)
+        console.log(req.user)
+        // Ensure requester is an admin
         if (!group.admins.includes(req.user.id)) {
-            return res.status(403).json({ error: "Only admins can add members" });
+            return res.status(403).json({ message: "Only admins can add members" });
         }
 
-        // Check if the user is already a member
-        if (group.members.includes(userId)) {
-            return res.status(400).json({ error: "User is already in the group" });
+        // Filter out users already in the group
+        const newMembers = userIds.filter(userId => !group.members.includes(userId));
+
+        if (newMembers.length === 0) {
+            return res.status(400).json({ message: "All selected users are already in the group" });
         }
 
-        // Add user to the group
-        group.members.push(userId);
+        // Add new members
+        group.members.push(...newMembers);
         await group.save();
 
-        res.json({ message: "User added to group successfully" });
+        // Optionally populate the member details before returning
+        const updatedGroup = await Group.findById(groupId)
+            .populate('members', 'name email profilePicture online')
+            .populate('admins', 'name email profilePicture');
+
+        res.status(200).json({ 
+            message: "Members added successfully", 
+            group: updatedGroup
+        });
     } catch (error) {
-        res.status(500).json({ error: "Error adding user to group" });
+        console.error("Error adding members to group:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };
+
+export const removeMemberFromGroup = async (req, res) => {
+    try {
+        const { groupId, userId } = req.body;
+
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ message: "Group not found" });
+        }
+
+        // Ensure requester is an admin
+        if (!group.admins.includes(req.user.id)) {
+            return res.status(403).json({ message: "Only admins can remove members" });
+        }
+
+        // Check if the user is in the group
+        if (!group.members.includes(userId)) {
+            return res.status(400).json({ message: "User is not a member of this group" });
+        }
+
+        // Remove the user
+        group.members = group.members.filter(member => member.toString() !== userId);
+        await group.save();
+
+        res.status(200).json({ message: "User removed successfully", group });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+
 

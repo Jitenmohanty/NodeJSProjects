@@ -278,7 +278,7 @@ const UnifiedChatWindow = ({
             );
           })}
           <div ref={messagesEndRef} />
-          {isBlocked && (
+          {isBlocked && !isGroup && (
             <div className="flex justify-center">
               <div className="bg-gray-700 w-[30%] text-gray-100 border border-gray-400 px-3 py-1 rounded-full flex justify-center items-center gap-2 shadow-sm">
                 <span className="text-sm font-medium">
