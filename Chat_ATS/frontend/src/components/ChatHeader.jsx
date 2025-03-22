@@ -14,7 +14,7 @@ import ProfileModal from "./ProfileModal";
 import { useAuth } from "../context/AuthContext";
 
 const ChatHeader = React.memo(
-  ({ selectedUser, setSelectedUser, setOpenChat, group, onBack }) => {
+  ({ selectedUser, setSelectedUser, setOpenChat, group, onBack,selectBot }) => {
     const { darkMode } = useTheme();
     const [showMenu, setShowMenu] = useState(false);
     const [openProfile, setOpenProfile] = useState(false);
@@ -23,7 +23,7 @@ const ChatHeader = React.memo(
 
 
     // Determine which entity is selected (user or group)
-    const entity = selectedUser || group;
+    const entity = selectedUser || group || selectBot;
 
     useEffect(() => {
       const checkIfUserIsBlocked = () => {
@@ -60,6 +60,11 @@ const ChatHeader = React.memo(
           group.avatar ||
           "https://images.pexels.com/photos/1435517/pexels-photo-1435517.jpeg?auto=compress&cs=tinysrgb&w=600"
         );
+      if (selectBot)
+        return (
+          selectBot.profilePicture ||
+          "https://images.pexels.com/photos/1435517/pexels-photo-1435517.jpeg?auto=compress&cs=tinysrgb&w=600"
+        );
       if (selectedUser)
         return (
           selectedUser.profilePicture ||
@@ -71,12 +76,14 @@ const ChatHeader = React.memo(
     const getName = () => {
       if (group) return group.name;
       if (selectedUser) return selectedUser.name;
+      if (selectBot) return selectBot.name;
       return "Chat";
     };
 
     const getStatus = () => {
       if (group) return `${group.members?.length || 0} members`;
       if (selectedUser) return selectedUser.online ? "Online" : "Offline";
+      if (selectBot) return selectBot.online ? "Online" : "Offline";
       return "";
     };
 

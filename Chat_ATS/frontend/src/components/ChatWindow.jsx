@@ -3,6 +3,8 @@ import ChatHeader from "./ChatHeader";
 import UnifiedChatWindow from "./UnifiedChatWindow";
 import MessageInput from "./MessageInput";
 import image from "../assets/chatbg.jpg"
+import BotChatWindow from "./BotChatWindow";
+import { useChatBot } from "../context/BotContext";
 
 const ChatWindow = ({
   selectedUser,
@@ -25,8 +27,12 @@ const ChatWindow = ({
   darkMode,
   handleScroll,
   loadingOlder,
-  chatContainerRef
+  chatContainerRef,
+  selectBot
 }) => {
+
+  const {botMessages} = useChatBot();
+
   return (
     <div
       className={`w-3/4 h-full flex flex-col rounded-lg shadow-md transition-all ${
@@ -60,6 +66,7 @@ const ChatWindow = ({
         setOpenChat={setOpenChat}
         group={selectedGroup}
         onBack={resetSelection}
+        selectBot={selectBot}
       />
 
       {/* Chat Content with Stylish Scrollbar */}
@@ -83,12 +90,22 @@ const ChatWindow = ({
             groupMembers={groupData?.members || []}
             chatContainerRef={chatContainerRef}
             selectedUser={selectedUser}
+            selectBot={selectBot}
           />
         )}
       </div>
 
+      { selectBot && (
+        <div className=" dark:border-gray-700">
+          <BotChatWindow
+              botMessages={botMessages}
+              selectBot={selectBot}
+          />
+        </div>
+      )}
+
       {/* Message Input */}
-      {(selectedUser || selectedGroup) && (
+      {(selectedUser || selectedGroup || selectBot) && (
         <div className=" dark:border-gray-700">
           <MessageInput
             message={message}
@@ -96,9 +113,11 @@ const ChatWindow = ({
             handleSendMessage={handleSendMessage}
             handleFileUpload={handleFileUpload}
             uploading={uploading}
+            selectBot={selectBot}
           />
         </div>
       )}
+     
     </div>
   );
 };

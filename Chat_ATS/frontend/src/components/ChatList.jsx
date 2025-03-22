@@ -11,6 +11,7 @@ const ChatList = ({
   unreadGroupMessages,
   openGroupModal,
   darkMode,
+  setSelectedBot
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [selectedTab, setSelectedTab] = useState("All");
@@ -71,11 +72,13 @@ const ChatList = ({
           setSelectedUser={setSelectedUser}
           setSelectedGroup={setSelectedGroup}
           unreadMessages={unreadMessages}
+          setSelectedBot={setSelectedBot}
         />
         <GroupList
           setSelectedGroup={setSelectedGroup}
           unreadGroupMessages={unreadGroupMessages}
           setSelectedUser={setSelectedUser}
+          setSelectedBot={setSelectedBot}
         />
       </div>
 

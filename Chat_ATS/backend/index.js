@@ -12,7 +12,7 @@ import upload from "./routes/uploadRoute.js";
 import { Server } from "socket.io";
 import { User } from "./models/userSchema.js";
 import { setupSocketIO } from "./Socket/socketHandler.js";
-
+import botMessageRoute from "./routes/chatBotRoute.js"
 // Load environment variables
 dotenv.config();
 
@@ -36,6 +36,8 @@ mongoose
   .connect(`${process.env.MONGODB_URI}`)
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
+
+
 
 // Auth Routes
 app.use("/users", userAuth);
@@ -83,6 +85,9 @@ app.use("/messages", messages);
 // Group chat routes
 app.use("/groups", groupRoutes);
 app.use("/group-messages", groupMessageRoutes);
+
+//chatbot route
+app.use("/bot",botMessageRoute)
 
 // Setup Socket.IO
 setupSocketIO(io);

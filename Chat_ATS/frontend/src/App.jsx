@@ -7,12 +7,13 @@ import Home from "./components/Home";
 import { ThemeProvider, useTheme } from "./context/ThemeContex";
 import ThemeToggle from "./components/ThemeToggle";
 import { GroupProvider } from "./context/GroupContext";
-import "./App.css"
+import "./App.css";
+import { ChatBotProvider } from "./context/BotContext";
 
 // Lazy load components for better performance
 const AuthComponent = React.lazy(() => import("./components/AuthComponent"));
 // const ChatInterface = React.lazy(() => import('./components/ChatInterface'));
-   
+
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -103,41 +104,43 @@ const App = () => {
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <GroupProvider>
-            <Layout>
-              <Suspense
-                fallback={
-                  <div className="flex h-screen items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-                  </div>
-                }
-              >
-                <Routes>
-                  {/* Public Routes */}
-                  <Route
-                    path="/auth"
-                    element={
-                      <PublicRoute>
-                        <AuthComponent />
-                      </PublicRoute>
-                    }
-                  />
+          <ChatBotProvider>
+            <GroupProvider>
+              <Layout>
+                <Suspense
+                  fallback={
+                    <div className="flex h-screen items-center justify-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                    </div>
+                  }
+                >
+                  <Routes>
+                    {/* Public Routes */}
+                    <Route
+                      path="/auth"
+                      element={
+                        <PublicRoute>
+                          <AuthComponent />
+                        </PublicRoute>
+                      }
+                    />
 
-                  {/* Protected Routes */}
+                    {/* Protected Routes */}
 
-                  {/* Catch all route */}
-                  <Route
-                    path="/"
-                    element={
-                      <ProtectedRoute>
-                        <Home />
-                      </ProtectedRoute>
-                    }
-                  />
-                </Routes>
-              </Suspense>
-            </Layout>
-          </GroupProvider>
+                    {/* Catch all route */}
+                    <Route
+                      path="/"
+                      element={
+                        <ProtectedRoute>
+                          <Home />
+                        </ProtectedRoute>
+                      }
+                    />
+                  </Routes>
+                </Suspense>
+              </Layout>
+            </GroupProvider>
+          </ChatBotProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

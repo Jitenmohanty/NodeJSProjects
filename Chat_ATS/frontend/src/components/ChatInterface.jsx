@@ -49,6 +49,7 @@ const ChatInterface = ({
   const [groupHasMore, setGroupHasMore] = useState(true);
   const [groupData, setGroupData] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [selectBot, setSelectedBot] = useState(null)
 
   const { darkMode } = useTheme();
 
@@ -562,11 +563,12 @@ const ChatInterface = ({
 
   return (
     <div className={`fixed inset-0 flex`}>
-      <Sidebar setSelectedUser={setSelectedUser} totalUnreadMessages={totalUnreadMessages}/>
+      <Sidebar setSelectedBot={setSelectedBot} setSelectedUser={setSelectedUser} setSelectedGroup={setSelectedGroup} totalUnreadMessages={totalUnreadMessages}/>
       <ChatList
         users={users}
         setSelectedUser={setSelectedUser}
         setSelectedGroup={setSelectedGroup}
+        setSelectedBot={setSelectedBot}
         unreadMessages={unreadMessages}
         unreadGroupMessages={unreadGroupMessages}
         openGroupModal={openGroupModal}
@@ -574,6 +576,7 @@ const ChatInterface = ({
       />
       <ChatWindow
         selectedUser={selectedUser}
+        selectBot={selectBot}
         setSelectedUser={setSelectedUser}
         setOpenChat={setOpenChat}
         selectedGroup={selectedGroup}

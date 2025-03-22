@@ -26,7 +26,7 @@ const UnifiedChatWindow = ({
         setIsBlocked(false);
       }
     };
-    if (!isGroup) {
+    if (!isGroup && selectedUser) {
       checkIfUserIsBlocked();
     }
   }, [user, selectedUser]); // Re-run when user or selectedUser changes

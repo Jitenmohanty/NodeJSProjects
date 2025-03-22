@@ -7,6 +7,7 @@ const GroupList = ({
   setSelectedGroup,
   unreadGroupMessages,
   setSelectedUser,
+  setSelectedBot
 }) => {
   const {
     groups,
@@ -54,7 +55,7 @@ const GroupList = ({
   const handleGroupSelection = useCallback(
     (group) => {
       setSelectedUser(null);
-      console.log(group);
+      setSelectedBot(null)
       // Check if the user is an admin
       const isAdmin = group.admins?.some((admin) => admin._id === user?.id);
       // Check if user has already entered password for this group

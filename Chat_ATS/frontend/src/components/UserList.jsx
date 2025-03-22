@@ -1,16 +1,17 @@
 import React, { useCallback } from "react";
 import { useTheme } from "../context/ThemeContex";
 
-const UserList = ({ users, setSelectedUser, unreadMessages, setSelectedGroup }) => {
+const UserList = ({ users, setSelectedUser, unreadMessages, setSelectedGroup,setSelectedBot }) => {
   const { darkMode } = useTheme();
 
   // Memoize function to prevent unnecessary re-renders
   const handleUserSelection = useCallback(
     (user) => {
       setSelectedGroup(null);
+      setSelectedBot(null)
       setSelectedUser(user);
     },
-    [setSelectedGroup, setSelectedUser]
+    [setSelectedGroup, setSelectedUser,setSelectedBot]
   );
 
   return (
