@@ -6,7 +6,7 @@ const AuthComponent = () => {
   const [isRegistering, setIsRegistering] = useState(false);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[90vh]">
+    <div className="flex flex-col items-center justify-center min-h-[90vh] no-scrollbar overflow-hidden">
       {isRegistering ? (
         <RegisterForm switchToLogin={() => setIsRegistering(false)} />
       ) : (

@@ -5,9 +5,9 @@ const ThemeToggle = () => {
     const { darkMode, toggleDarkMode } = useTheme();
 
     return (
-        <button
+        <button 
             onClick={toggleDarkMode}
-            className="fixed top-3 right-4 p-2 rounded-full bg-gray-200 dark:bg-gray-800  transition-colors"
+            className="fixed top-3 right-8 z-50 p-2 rounded-full bg-gray-200 dark:bg-gray-800  transition-colors"
             aria-label="Toggle theme"
         >
             {darkMode ? (

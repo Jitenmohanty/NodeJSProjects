@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Menu, Search, ArrowLeft } from "lucide-react";
 import UserList from "./UserList";
-import GroupList from "./GroupList";
+import GroupList from "../groupChat/GroupList";
 
 const ChatList = ({
   users,

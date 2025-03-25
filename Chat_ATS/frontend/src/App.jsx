@@ -9,10 +9,10 @@ import ThemeToggle from "./components/ThemeToggle";
 import { GroupProvider } from "./context/GroupContext";
 import "./App.css";
 import { ChatBotProvider } from "./context/BotContext";
+import logo from "../src/assets/chat.webp"
 
 // Lazy load components for better performance
 const AuthComponent = React.lazy(() => import("./components/AuthComponent"));
-// const ChatInterface = React.lazy(() => import('./components/ChatInterface'));
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -20,7 +20,7 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
       </div>
     );
@@ -55,34 +55,41 @@ const PublicRoute = ({ children }) => {
 // Layout Component
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
-  const { darkMode, toggleDarkMode } = useTheme();
+  const { darkMode } = useTheme();
 
   return (
     <div
-      className={`min-h-screen ${
+      className={` min-h-screen ${
         darkMode
           ? "bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900"
           : "bg-gradient-to-r from-blue-100 via-white to-blue-100"
-      } transition-colors duration-200`}
+      } transition-colors duration-200 overflow-hidden no-scrollbar`}
     >
       {user && (
-        <nav className="bg-white shadow fixed w-full">
+        <nav
+          className={` w-full z-50 shadow-sm transition-colors duration-300 ${
+            darkMode
+              ? "bg-gray-700 shadow-gray-500/50"
+              : "bg-white shadow-gray-200/50"
+          }`}
+        >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex h-16 justify-between">
+            <div className="flex h-16 justify-between items-center">
+              {/* Left side - Logo/Brand */}
               <div className="flex items-center">
-                <h1 className="text-xl font-bold text-gray-900">Chat App</h1>
+               <img className="w-16 h-16 scale-100 rounded-full" src={logo}></img>
               </div>
-              <div className="flex items-center space-x-4">
+
+              {/* Right side - Actions */}
+              <div className="flex items-center space-x-4 relative">
                 <ThemeToggle />
-                <Link to={"/"} className="text-gray-600 hover:text-gray-900">
-                  Profile
-                </Link>
-                <Link to={"/"} className="text-gray-600 hover:text-gray-900">
-                  Settings
-                </Link>
                 <button
                   onClick={logout}
-                  className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                  className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                    darkMode
+                      ? "bg-red-700 text-white hover:bg-red-600"
+                      : "bg-red-600 text-white hover:bg-red-700"
+                  }`}
                 >
                   Logout
                 </button>
@@ -91,7 +98,7 @@ const Layout = ({ children }) => {
           </div>
         </nav>
       )}
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl px-4 py-4 sm:px-4 lg:px-6">
         {children}
       </main>
     </div>
@@ -127,7 +134,6 @@ const App = () => {
 
                     {/* Protected Routes */}
 
-                    {/* Catch all route */}
                     <Route
                       path="/"
                       element={

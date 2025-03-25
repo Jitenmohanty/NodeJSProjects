@@ -275,45 +275,24 @@ export const GroupProvider = ({ children }) => {
   const addMembersToGroup = async (groupId, userIds) => {
     try {
       setLoading(true);
+      
       const response = await axios.post(
         "http://localhost:3000/groups/add-member",
-        { groupId, userIds }, // Now sending an array of userIds
+        { groupId, userIds },
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
-
-      // Update local state to reflect the changes
-      // setGroups((prevGroups) =>
-      //   prevGroups.map((group) => {
-      //     if (group._id === groupId) {
-      //       // Filter out users that are already members to avoid duplicates
-      //       const newMembers = userIds.filter(
-      //         (userId) =>
-      //           !group.members.some((member) =>
-      //             typeof member === "object"
-      //               ? member._id === userId
-      //               : member === userId
-      //           )
-      //       );
-
-      //       // Add new members to the group
-      //       return {
-      //         ...group,
-      //         members: [
-      //           ...group.members,
-      //           ...newMembers.map((id) => {
-      //             // If we have user objects in the users array from auth context
-      //             const user = window.users?.find((u) => u._id === id);
-      //             return user || id; // Return user object if found, otherwise just the ID
-      //           }),
-      //         ],
-      //       };
-      //     }
-      //     return group;
-      //   })
-      // );
-
+  
+      // Ensure local state reflects the updated group
+      if (response.data.group) {
+        setGroups(prevGroups => 
+          prevGroups.map(gr => 
+            gr._id === response.data.group._id ? response.data.group : gr
+          )
+        );
+      }
+  
       setError(null);
       return response.data;
     } catch (error) {
@@ -326,7 +305,7 @@ export const GroupProvider = ({ children }) => {
       setLoading(false);
     }
   };
-
+  
    // Remove a member from a group
    const removeMember = async (groupId, userId) => {
     try {
@@ -360,6 +339,9 @@ export const GroupProvider = ({ children }) => {
       throw error;
     }
 };
+
+
+// console.log(groups)
 
   return (
     <GroupContext.Provider

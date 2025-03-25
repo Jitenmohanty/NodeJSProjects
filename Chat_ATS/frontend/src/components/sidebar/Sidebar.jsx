@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import ProfileModal from "./ProfileModal";
 import SettingsModal from "./SettingModal";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 
 const Sidebar = ({ totalUnreadMessages,setSelectedBot,setSelectedGroup,setSelectedUser }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);

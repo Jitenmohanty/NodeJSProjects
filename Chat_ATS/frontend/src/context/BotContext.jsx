@@ -99,17 +99,14 @@ export const ChatBotProvider = ({ children }) => {
     }
   };
 
-  // Fetch chat history on mount
-  useEffect(() => {
-    fetchChatHistory();
-  }, []);
 
   return (
     <ChatBotContext.Provider value={{ 
       botMessages, 
       loading, 
       sendMessageToBot,
-      clearChat
+      clearChat,
+      fetchChatHistory
     }}>
       {children}
     </ChatBotContext.Provider>

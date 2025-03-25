@@ -1,9 +1,11 @@
 import React from "react";
 import { Shield, X } from "lucide-react";
-import { useGroup } from "../context/GroupContext";
-import { useAuth } from "../context/AuthContext";
+import { useGroup } from "../../context/GroupContext";
+import { useAuth } from "../../context/AuthContext";
 
 const GroupMembersList = ({ members, admins, users, groupId }) => {
+
+
   // Default avatar if member has no profile picture
   const defaultAvatar = "https://images.pexels.com/photos/1435517/pexels-photo-1435517.jpeg?auto=compress&cs=tinysrgb&w=600";
   const { removeMember } = useGroup();

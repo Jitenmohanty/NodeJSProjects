@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
-import { useGroup } from "../context/GroupContext";
-import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContex";
+import { useGroup } from "../../context/GroupContext";
+import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContex";
 
 const GroupList = ({
   setSelectedGroup,
@@ -22,11 +22,6 @@ const GroupList = ({
   const [error, setError] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [selectedGroupState, setSelectedGroupState] = useState(null);
-
-  // Handle loading state
-  if (loading) {
-    return <div className="p-4 text-center text-white">Loading groups...</div>;
-  }
 
   // Function to verify password
   const handleVerifyPassword = async () => {
@@ -85,9 +80,12 @@ const GroupList = ({
     }
   };
 
+  // Move the conditional rendering to the return statement instead of early return
   return (
     <div className="overflow-y-auto">
-      {groups?.length > 0 ? (
+      {loading ? (
+        <div className="p-4 text-center text-white">Loading groups...</div>
+      ) : groups?.length > 0 ? (
         groups.map((group) => (
           <div
             key={group._id}
@@ -156,6 +154,9 @@ const GroupList = ({
                 : "bg-white border border-gray-200"
             }`}
           >
+            {/* Rest of the modal code remains unchanged */}
+            {/* ... */}
+            
             {/* Modal Header */}
             <div className="mb-5">
               <h3

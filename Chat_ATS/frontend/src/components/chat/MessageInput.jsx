@@ -1,8 +1,8 @@
 import { useRef, useState, useEffect } from "react";
 import EmojiPicker from "emoji-picker-react";
 import { Paperclip, Send, Smile } from "lucide-react";
-import { useTheme } from "../context/ThemeContex";
-import { useChatBot } from "../context/BotContext";
+import { useTheme } from "../../context/ThemeContex";
+import { useChatBot } from "../../context/BotContext";
 
 const MessageInput = ({
   message,

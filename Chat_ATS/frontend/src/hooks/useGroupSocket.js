@@ -28,7 +28,6 @@ export const useGroupSocket = (userId, updateUnreadCount) => {
       
       // Add handler for receiving group messages
       socketRef.current.on('receive_group_message', (data) => {
-        console.log('Received group message:', data);
         // Only update unread count if this user isn't the sender
         if (data.message && data.message.sender._id !== userId) {
           const groupId = data.message.group;
@@ -101,7 +100,6 @@ export const useGroupSocket = (userId, updateUnreadCount) => {
       ...fileData
     };
     
-    console.log('Sending group message:', messageData);
     socketRef.current.emit('send_group_message', messageData);
     
     return tempId;

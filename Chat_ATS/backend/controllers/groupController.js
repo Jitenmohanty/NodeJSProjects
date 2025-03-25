@@ -1,6 +1,5 @@
 import { GroupMessage } from "../models/groupMessageSchema.js";
 import { Group } from "../models/groupSchema.js";
-import bcrypt from "bcryptjs";
 
 
 // ✅ Create Group
@@ -33,8 +32,8 @@ export const createGroup = async (req, res) => {
 export const getGroups = async (req, res) => {
     try {
         const groups = await Group.find({ members: req.user.id })
-            .populate("members", "name email online")
-            .populate("admins", "name email");
+            .populate("members", "name email online profilePicture")
+            .populate("admins", "name email profilePicture");
         res.json(groups);
     } catch (error) {
         res.status(500).json({ error: "Error fetching groups" });
@@ -130,8 +129,7 @@ export const addMembersToGroup = async (req, res) => {
             return res.status(404).json({ message: "Group not found" });
         }
 
-        console.log(group)
-        console.log(req.user)
+       
         // Ensure requester is an admin
         if (!group.admins.includes(req.user.id)) {
             return res.status(403).json({ message: "Only admins can add members" });

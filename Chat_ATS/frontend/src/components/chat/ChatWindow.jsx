@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react";
 import ChatHeader from "./ChatHeader";
 import UnifiedChatWindow from "./UnifiedChatWindow";
 import MessageInput from "./MessageInput";
-import image from "../assets/chatbg.jpg"
-import BotChatWindow from "./BotChatWindow";
-import { useChatBot } from "../context/BotContext";
+import image from "../../assets/chatbg.jpg"
+import { useChatBot } from "../../context/BotContext";
+import BotChatWindow from "../bot/BotChatWindow";
 
 const ChatWindow = ({
   selectedUser,
@@ -31,7 +31,11 @@ const ChatWindow = ({
   selectBot
 }) => {
 
-  const {botMessages} = useChatBot();
+
+  const {botMessages,fetchChatHistory} = useChatBot();
+  useEffect(()=>{
+    fetchChatHistory();
+  },[])
 
   return (
     <div
@@ -74,8 +78,8 @@ const ChatWindow = ({
         className="flex-1 overflow-y-auto custom-scrollbar"
         onScroll={handleScroll}
       >
-        {!selectedUser && !selectedGroup ? (
-          <div className="flex justify-center items-center h-full text-gray-500 opacity-75">
+        {!selectedUser && !selectedGroup && !selectBot ? (
+          <div className="flex justify-center items-center text-gray-500 opacity-75">
          <img className="object-contain" src={image} alt="image"/>
           </div>
         ) : (

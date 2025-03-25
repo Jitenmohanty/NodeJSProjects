@@ -9,21 +9,41 @@ import {
   Info,
   User,
 } from "lucide-react";
-import { useTheme } from "../context/ThemeContex";
-import ProfileModal from "./ProfileModal";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
+import { useGroup } from "../../context/GroupContext";
+import { useTheme } from "../../context/ThemeContex";
+import ProfileModal from "../sidebar/ProfileModal";
 
 const ChatHeader = React.memo(
-  ({ selectedUser, setSelectedUser, setOpenChat, group, onBack,selectBot }) => {
+  ({
+    selectedUser,
+    setSelectedUser,
+    setOpenChat,
+    group,
+    onBack,
+    selectBot,
+  }) => {
     const { darkMode } = useTheme();
     const [showMenu, setShowMenu] = useState(false);
     const [openProfile, setOpenProfile] = useState(false);
     const [isBlocked, setIsBlocked] = useState(false);
     const { BlockUser, UnblockUser, user } = useAuth();
+    const { groups } = useGroup();
+    // console.log(groups)
 
+    let currentGroup = [];
 
-    // Determine which entity is selected (user or group)
-    const entity = selectedUser || group || selectBot;
+    if (group) {
+      currentGroup = groups.filter((gr) => gr._id === group._id);
+    }
+
+    // Ensure currentGroup[0] exists before using it
+    const entity =
+      selectedUser ||
+      (currentGroup.length > 0 ? currentGroup[0] : null) ||
+      selectBot;
+
+    // console.log(currentGroup, groups);
 
     useEffect(() => {
       const checkIfUserIsBlocked = () => {
@@ -101,7 +121,7 @@ const ChatHeader = React.memo(
 
     return (
       <div
-        className={`p-3 flex items-center justify-between ${
+        className={` ${entity?"p-3":"p-4.5"} flex items-center justify-between ${
           darkMode
             ? "bg-gradient-to-r from-blue-700 to-blue-800"
             : "bg-gradient-to-r from-blue-500 to-blue-600"
@@ -121,7 +141,10 @@ const ChatHeader = React.memo(
 
           {/* User/Group Info with Avatar */}
           {entity && (
-            <div className="flex items-center cursor-pointer" onClick={handleProfileClick}>
+            <div
+              className="flex items-center cursor-pointer"
+              onClick={handleProfileClick}
+            >
               <div className="relative">
                 <img
                   src={getAvatar()}
@@ -180,8 +203,8 @@ const ChatHeader = React.memo(
                       <Delete className="w-4 h-4 mr-2" />
                       <span>Clear Chat</span>
                     </li>
-                    {selectedUser && (
-                      isBlocked ? (
+                    {selectedUser &&
+                      (isBlocked ? (
                         <li
                           onClick={() => handleUnBlockUser(selectedUser._id)}
                           className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center text-green-500 cursor-pointer"
@@ -197,8 +220,7 @@ const ChatHeader = React.memo(
                           <UserX className="w-4 h-4 mr-2" />
                           <span>Block User</span>
                         </li>
-                      )
-                    )}
+                      ))}
                   </ul>
                 </div>
               )}
@@ -208,7 +230,7 @@ const ChatHeader = React.memo(
           {/* Close Chat Button */}
           <button
             onClick={() => setOpenChat(false)}
-            className="text-white hover:text-gray-200 p-1"
+            className="text-white hover:text-gray-200 p-1 "
           >
             <X className="w-5 h-5" />
           </button>

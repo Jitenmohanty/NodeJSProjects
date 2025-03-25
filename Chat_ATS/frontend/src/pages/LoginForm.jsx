@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContex";
 
@@ -25,63 +26,170 @@ const LoginForm = ({ switchToRegister }) => {
     }
   };
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.5
+      }
+    }
+  };
+
   return (
-    <div
-      className={`p-8 rounded-lg shadow-xl w-full max-w-sm mx-auto ${
-        darkMode
-          ? "bg-gray-800 text-white border border-gray-700"
-          : "bg-white text-gray-800 border border-gray-200"
-      } transition-all duration-300`}
+    <div 
+      className=" flex items-center justify-center p-4 bg-fixed bg-cover bg-center"
+      
     >
-      <h2 className="text-3xl font-bold mb-6 text-center text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
-        Login
-      </h2>
-      <form onSubmit={handleLogin} className="flex flex-col space-y-4">
-        <input
-          type="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-          className={`w-full p-3 rounded-lg border ${
-            darkMode
-              ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-              : "bg-gray-100 border-gray-300 text-gray-800 placeholder-gray-500"
-          } focus:outline-none focus:ring-2 focus:ring-green-400 transition-all duration-300`}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-          className={`w-full p-3 rounded-lg border ${
-            darkMode
-              ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-              : "bg-gray-100 border-gray-300 text-gray-800 placeholder-gray-500"
-          } focus:outline-none focus:ring-2 focus:ring-green-400 transition-all duration-300`}
-        />
-        <button
-          type="submit"
-          disabled={isLoading}
-          className={`w-full p-3 rounded-lg font-semibold ${
-            isLoading
-              ? "bg-green-400 cursor-not-allowed"
-              : "bg-gradient-to-r from-green-400 to-blue-500 hover:from-green-500 hover:to-blue-600"
-          } text-white transition-all duration-300 transform hover:scale-105`}
+      <motion.div 
+        className="w-full max-w-2xl flex"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
+        {/* Left side - Welcome text */}
+        <motion.div 
+          className="hidden md:flex flex-col justify-center p-8 text-white w-1/2"
+          variants={itemVariants}
         >
-          {isLoading ? "Logging in..." : "Login"}
-        </button>
-      </form>
-      <p className="text-center mt-6">
-        Don't have an account?{" "}
-        <button
-          onClick={switchToRegister}
-          className={`font-semibold ${
-            darkMode ? "text-green-400 hover:text-green-300" : "text-blue-500 hover:text-blue-600"
-          } transition-all duration-300`}
+          <motion.h1 
+            className="text-4xl font-bold mb-4"
+            whileHover={{ scale: 1.02 }}
+          >
+            Welcome to ChatConnect
+          </motion.h1>
+          <motion.p 
+            className="text-xl mb-6"
+            whileHover={{ scale: 1.01 }}
+          >
+            Connect with friends and colleagues in real-time
+          </motion.p>
+          <motion.div 
+            className="space-y-2"
+            variants={containerVariants}
+          >
+            {[
+              { iconColor: "bg-green-400", text: "Secure end-to-end encryption" },
+              { iconColor: "bg-blue-400", text: "Group and private chats" },
+              { iconColor: "bg-purple-400", text: "File sharing capabilities" }
+            ].map((feature, index) => (
+              <motion.div 
+                key={index}
+                className="flex items-center"
+                variants={itemVariants}
+                whileHover={{ x: 5 }}
+              >
+                <div className={`w-8 h-8 rounded-full ${feature.iconColor} flex items-center justify-center mr-3`}>
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                </div>
+                <span>{feature.text}</span>
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
+
+        {/* Right side - Login form */}
+        <motion.div
+          className={`p-8 rounded-lg w-full md:w-1/2 ${
+            darkMode
+              ? "bg-gray-800/90 text-white"
+              : "bg-white/90 text-gray-800"
+          }  shadow-xl`}
+          variants={itemVariants}
+          whileHover={{ scale: 1.01 }}
         >
-          Register
-        </button>
-      </p>
+          <motion.h2 
+            className="text-3xl font-bold mb-6 text-center text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500"
+            animate={{
+              backgroundPosition: ["0% 50%", "100% 50%"],
+            }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              repeatType: "reverse",
+            }}
+          >
+            Login
+          </motion.h2>
+          <motion.form 
+            onSubmit={handleLogin} 
+            className="flex flex-col space-y-4"
+            variants={containerVariants}
+          >
+            <motion.div variants={itemVariants}>
+              <input
+                type="email"
+                placeholder="Email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className={`w-full p-3 rounded-lg border ${
+                  darkMode
+                    ? "bg-gray-700/50 border-gray-600 text-white placeholder-gray-400"
+                    : "bg-white border-gray-300 text-gray-800 placeholder-gray-500"
+                } focus:outline-none focus:ring-2 focus:ring-green-400`}
+              />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <input
+                type="password"
+                placeholder="Password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                className={`w-full p-3 rounded-lg border ${
+                  darkMode
+                    ? "bg-gray-700/50 border-gray-600 text-white placeholder-gray-400"
+                    : "bg-white border-gray-300 text-gray-800 placeholder-gray-500"
+                } focus:outline-none focus:ring-2 focus:ring-green-400`}
+              />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <motion.button
+                type="submit"
+                disabled={isLoading}
+                className={`w-full p-3 rounded-lg font-semibold ${
+                  isLoading
+                    ? "bg-green-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-green-400 to-blue-500"
+                } text-white`}
+                whileHover={!isLoading ? { scale: 1.02 } : {}}
+                whileTap={!isLoading ? { scale: 0.98 } : {}}
+              >
+                {isLoading ? "Logging in..." : "Login"}
+              </motion.button>
+            </motion.div>
+          </motion.form>
+          <motion.p 
+            className="text-center mt-6"
+            variants={itemVariants}
+          >
+            Don't have an account?{" "}
+            <motion.button
+              onClick={switchToRegister}
+              className={`font-semibold ${
+                darkMode ? "text-green-400" : "text-blue-500"
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Register
+            </motion.button>
+          </motion.p>
+        </motion.div>
+      </motion.div>
     </div>
   );
 };

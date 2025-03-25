@@ -95,9 +95,8 @@ dotenv.config();
     }
   };
 
-  
 // Block a user
-export const blockUser =  async (req, res) => {
+ export const blockUser =  async (req, res) => {
   try {
     console.log("object")
     const user = await User.findById(req.user.id);

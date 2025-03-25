@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContex";
+import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContex";
 
 const BotChatWindow = ({ botMessages, selectBot }) => {
   const messagesEndRef = useRef(null);

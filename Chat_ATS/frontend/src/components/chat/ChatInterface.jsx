@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
-import { useAuth } from "../context/AuthContext";
-import useSocket from "../hooks/useSocket";
-import { useGroupSocket } from "../hooks/useGroupSocket";
-import { useTheme } from "../context/ThemeContex";
-import CreateGroupModal from "./CreateGroupModal";
-import Sidebar from "./Sidebar";
+import { useAuth } from "../../context/AuthContext";
+import useSocket from "../../hooks/useSocket";
+import { useGroupSocket } from "../../hooks/useGroupSocket";
+import { useTheme } from "../../context/ThemeContex";
 import ChatList from "./ChatList";
 import ChatWindow from "./ChatWindow";
+import CreateGroupModal from "../groupChat/CreateGroupModal";
+import Sidebar from "../sidebar/Sidebar";
 
 const ChatInterface = ({
   setOpenChat,
