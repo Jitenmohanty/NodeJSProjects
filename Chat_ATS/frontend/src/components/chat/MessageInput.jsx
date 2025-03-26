@@ -52,11 +52,11 @@ const MessageInput = ({
   return (
     <form
       onSubmit={onSubmit}
-      className={`p-4 border-t flex items-center ${
+      className={`p-4 flex items-center ${
         darkMode
-          ? "bg-gray-900 border-gray-700 text-white"
-          : "bg-white border-gray-200 text-black"
-      }`}
+        ? "bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900"
+        : "bg-gradient-to-r from-blue-100 via-white to-blue-100"
+    } `}
     >
       {/* Emoji Picker Button */}
       <div className="relative" ref={emojiPickerRef}>
@@ -111,9 +111,9 @@ const MessageInput = ({
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         placeholder="Type a message..."
-        className={`flex-1 rounded-full px-4 py-2 border focus:outline-none ${
+        className={`flex-1 rounded-full px-4 py-2 ${darkMode?"border-2":"border-4"} focus:outline-none ${
           darkMode
-            ? "bg-gray-800 text-white border-gray-600"
+            ? "bg-gray-800 text-white border-gray-600 "
             : "bg-white text-black border-gray-300"
         }`}
       />

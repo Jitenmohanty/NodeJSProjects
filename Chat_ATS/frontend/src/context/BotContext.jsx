@@ -10,7 +10,7 @@ export const ChatBotProvider = ({ children }) => {
   const fetchChatHistory = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:3000/bot/chatbot/history", {
+      const response = await fetch(`${import.meta.env.VITE_FRONTEND_URI}/bot/chatbot/history`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
@@ -44,7 +44,7 @@ export const ChatBotProvider = ({ children }) => {
     ]);
   
     try {
-      const response = await fetch("http://localhost:3000/bot/chatbot", {
+      const response = await fetch(`${import.meta.env.VITE_FRONTEND_URI}/bot/chatbot`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
@@ -83,7 +83,7 @@ export const ChatBotProvider = ({ children }) => {
   const clearChat = async () => {
     setLoading(true);
     try {
-      await fetch("http://localhost:3000/bot/chatbot/clear-history", {
+      await fetch(`${import.meta.env.VITE_FRONTEND_URI}/bot/chatbot/clear-history`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("token")}`,

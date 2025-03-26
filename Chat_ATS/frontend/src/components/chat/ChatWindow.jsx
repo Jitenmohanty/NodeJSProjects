@@ -44,7 +44,7 @@ const ChatWindow = ({
       } ${
         darkMode
           ? "text-white bg-gradient-to-br from-gray-900 via-gray-800 to-black"
-          : "text-gray-700 bg-gradient-to-br from-blue-200 via-white to-blue-100"
+          : "text-gray-700 bg-gradient-to-bl from-blue-200 via-white to-blue-100"
       }`}
     >
       {/* Notification */}
@@ -79,8 +79,8 @@ const ChatWindow = ({
         onScroll={handleScroll}
       >
         {!selectedUser && !selectedGroup && !selectBot ? (
-          <div className="flex justify-center items-center text-gray-500 opacity-75">
-         <img className="object-contain" src={image} alt="image"/>
+          <div className="flex justify-center items-center h-full bg-black text-gray-500 opacity-75">
+         <img className="object-contain h-[40vw]" src={image} alt="image"/>
           </div>
         ) : (
           <UnifiedChatWindow

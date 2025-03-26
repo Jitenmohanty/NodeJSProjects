@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContex";
+import { toast } from "react-toastify";
 
 const LoginForm = ({ switchToRegister }) => {
   const { login } = useAuth();
@@ -15,9 +16,9 @@ const LoginForm = ({ switchToRegister }) => {
     try {
       const result = await login(form.email, form.password);
       if (result.success) {
-        alert("Welcome back! You have successfully logged in.");
+       toast.success("Welcome to Chat app!")
       } else {
-        alert("Login failed: " + result.error);
+        toast.error("Login failed: " + result.error);
       }
     } catch (error) {
       alert("An unexpected error occurred. Please try again.");

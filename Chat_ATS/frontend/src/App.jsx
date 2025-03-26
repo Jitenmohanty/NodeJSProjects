@@ -9,7 +9,8 @@ import ThemeToggle from "./components/ThemeToggle";
 import { GroupProvider } from "./context/GroupContext";
 import "./App.css";
 import { ChatBotProvider } from "./context/BotContext";
-import logo from "../src/assets/chat.webp"
+import logo from "../src/assets/logo2.png"
+import { ToastContainer } from 'react-toastify';
 
 // Lazy load components for better performance
 const AuthComponent = React.lazy(() => import("./components/AuthComponent"));
@@ -76,12 +77,12 @@ const Layout = ({ children }) => {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex h-16 justify-between items-center">
               {/* Left side - Logo/Brand */}
-              <div className="flex items-center">
-               <img className="w-16 h-16 scale-100 rounded-full" src={logo}></img>
+              <div className="flex items-center p-2">
+               <img className="w-12 h-12 scale-100 object-contain" src={logo}></img>
               </div>
 
               {/* Right side - Actions */}
-              <div className="flex items-center space-x-4 relative">
+              <div className="flex items-center space-x-4">
                 <ThemeToggle />
                 <button
                   onClick={logout}
@@ -148,6 +149,7 @@ const App = () => {
             </GroupProvider>
           </ChatBotProvider>
         </AuthProvider>
+        <ToastContainer />
       </ThemeProvider>
     </BrowserRouter>
   );

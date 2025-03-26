@@ -10,13 +10,16 @@ import {
 import ProfileModal from "./ProfileModal";
 import SettingsModal from "./SettingModal";
 import { useAuth } from "../../context/AuthContext";
+import ThemeToggle from "../ThemeToggle";
+import { useTheme } from "../../context/ThemeContex";
 
-const Sidebar = ({ totalUnreadMessages,setSelectedBot,setSelectedGroup,setSelectedUser }) => {
+const Sidebar = ({ totalUnreadMessages, setSelectedBot, setSelectedGroup, setSelectedUser }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  let show = true;
 
   const { logout, user } = useAuth();
-
+  const { darkMode } = useTheme();
 
   const handleLogout = () => {
     if (window.confirm("Are you sure you want to logout?")) {
@@ -28,29 +31,37 @@ const Sidebar = ({ totalUnreadMessages,setSelectedBot,setSelectedGroup,setSelect
     setSelectedGroup(null);
     setSelectedUser(null);
     const dummyBot = {
-        _id: "dummy_bot_123",
-        name: "ChatBot AI",
-        online: true,
-        profilePicture: "https://images.pexels.com/photos/8566531/pexels-photo-8566531.jpeg?auto=compress&cs=tinysrgb&w=600",
+      _id: "dummy_bot_123",
+      name: "ChatBot AI",
+      online: true,
+      profilePicture: "https://images.pexels.com/photos/8566531/pexels-photo-8566531.jpeg?auto=compress&cs=tinysrgb&w=600",
     };
 
     setSelectedBot(dummyBot);
-},  [setSelectedGroup, setSelectedUser,setSelectedBot]);
-
+  }, [setSelectedGroup, setSelectedUser, setSelectedBot]);
 
   return (
     <>
-      <div className="h-full bg-[#101828] justify-between border-gray-400 border-r-[1px] flex flex-col p-2 pt-5 gap-4 w-16">
+      <div
+        className={`h-full ${
+          darkMode
+            ? "bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"
+            : "bg-gradient-to-t from-blue-200 via-white to-blue-200"
+        } justify-between border-gray-400 border-r-[1px] flex flex-col p-2 pt-5 gap-4 w-16`}
+      >
         {/* Top Icons */}
         <div className="flex flex-col-reverse gap-6 relative">
-          <div onClick={()=>handleChatBot()} className="p-2 rounded-lg hover:bg-purple-600 transition duration-300 ease-in-out cursor-pointer shadow-lg shadow-purple-500/50 animate-bounce motion-reduce:animate-none">
-            <BotMessageSquare className="w-8 text-yellow-400 drop-shadow-lg animate-floating" />
+          <div
+            onClick={() => handleChatBot()}
+            className="p-2 rounded-lg hover:bg-purple-600 transition duration-300 ease-in-out cursor-pointer shadow-lg shadow-purple-500/50 animate-bounce motion-reduce:animate-none"
+          >
+            <BotMessageSquare className={`w-8 ${darkMode ? "text-yellow-400" : "text-purple-700"}`} />
           </div>
-          <div  className="p-2 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out cursor-pointer">
-            <GroupIcon className="w-8 text-white" />
+          <div className="p-2 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out cursor-pointer">
+            <GroupIcon className={`w-8 ${darkMode ? "text-white" : "text-black"}`} />
           </div>
           <div className="p-2 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out cursor-pointer relative">
-            <MessageSquare className="w-8 text-white" />
+            <MessageSquare className={`w-8 ${darkMode ? "text-white" : "text-black"}`} />
             {totalUnreadMessages > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                 {totalUnreadMessages > 99 ? "99+" : totalUnreadMessages}
@@ -68,37 +79,32 @@ const Sidebar = ({ totalUnreadMessages,setSelectedBot,setSelectedGroup,setSelect
                 className="w-8 h-8 rounded-full object-cover"
               />
             ) : (
-              <User className="w-8 text-white" />
+              <User className={`w-8 ${darkMode ? "text-white" : "text-black"}`} />
             )}
           </div>
         </div>
 
         {/* Bottom Icons */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 relative">
+          <ThemeToggle show={show} />
           <div
             className="p-2 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out cursor-pointer"
             onClick={() => setIsSettingsOpen(true)}
           >
-            <Settings className="w-8 text-white" />
+            <Settings className={`w-8 ${darkMode ? "text-white" : "text-black"}`} />
           </div>
           <div
             onClick={handleLogout}
             className="p-2 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out cursor-pointer"
           >
-            <LogOut className="w-8 text-white" />
+            <LogOut className={`w-8 ${darkMode ? "text-white" : "text-black"}`} />
           </div>
         </div>
       </div>
 
       {/* Modals */}
-      <ProfileModal
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-      />
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-      />
+      <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </>
   );
 };

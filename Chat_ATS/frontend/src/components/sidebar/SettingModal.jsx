@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { X, Camera, User, Mail, Phone, Info } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { toast } from "react-toastify";
 
 const SettingsModal = ({ isOpen, onClose }) => {
   const { user, updateProfile } = useAuth();
@@ -47,10 +48,10 @@ const SettingsModal = ({ isOpen, onClose }) => {
     setLoading(false);
 
     if (response.success) {
-      alert("Profile updated successfully!");
+      toast.success("Profile updated successfully!");
       setIsEditing(false);
     } else {
-      alert(response.error);
+      toast.error(response.error);
     }
   };
 

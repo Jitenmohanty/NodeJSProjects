@@ -10,9 +10,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
 
-  
-  // console.log(users)
-
   // Use the optimized socket hook
   const { socket } = useSocket(user?.id, setUsers);
 
@@ -41,25 +38,32 @@ export const AuthProvider = ({ children }) => {
         throw new Error("No token found");
       }
 
-      const response = await axios.get("http://localhost:3000/validate-token", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(
+        `${import.meta.env.VITE_FRONTEND_URI}/validate-token`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       setUser(response.data.user);
     } catch (error) {
       localStorage.removeItem("token");
       delete axios.defaults.headers.common["Authorization"];
       setUser(null);
+      logout();
     } finally {
       setLoading(false);
     }
   };
   const login = async (email, password) => {
     try {
-      const response = await axios.post("http://localhost:3000/users/login", {
-        email,
-        password,
-      });
+      const response = await axios.post(
+        `${import.meta.env.VITE_FRONTEND_URI}/users/login`,
+        {
+          email,
+          password,
+        }
+      );
 
       const { token, user } = response.data;
       localStorage.setItem("token", token);
@@ -102,9 +106,13 @@ export const AuthProvider = ({ children }) => {
         formPayload.append("profilePicture", profilePicture);
       }
 
-      await axios.post("http://localhost:3000/users/register", formPayload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await axios.post(
+        `${import.meta.env.VITE_FRONTEND_URI}/users/register`,
+        formPayload,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
 
       return { success: true };
     } catch (error) {
@@ -118,17 +126,17 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (id, updatedData) => {
     try {
       const formData = new FormData();
-      
+
       // Only append fields that changed
       Object.keys(updatedData).forEach((key) => {
         // Skip the preview and only include real data
-        if (key !== 'profilePicturePreview' && updatedData[key]) {
+        if (key !== "profilePicturePreview" && updatedData[key]) {
           formData.append(key, updatedData[key]);
         }
       });
-  
+
       const response = await axios.put(
-        "http://localhost:3000/users/update-profile",
+        `${import.meta.env.VITE_FRONTEND_URI}/users/update-profile`,
         formData,
         {
           headers: {
@@ -159,7 +167,9 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/users");
+      const response = await axios.get(
+        `${import.meta.env.VITE_FRONTEND_URI}/users`
+      );
       setUsers(response.data);
     } catch (error) {
       console.error("Failed to fetch users:", error);
@@ -170,26 +180,29 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log("Blocking user...");
       let token = localStorage.getItem("token");
-  
-      const response = await fetch(`http://localhost:3000/users/block/${id}`, {
-        method: "POST",
-        headers: { 
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
+
+      const response = await fetch(
+        `${import.meta.env.VITE_FRONTEND_URI}/users/block/${id}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-      });
-  
+      );
+
       if (!response.ok) {
         throw new Error("Failed to block user");
       }
-  
+
       const data = await response.json();
-  
+
       setUser((prev) => ({
         ...prev,
         blockedUsers: data.blockedUsers, // Updating blockedUsers correctly
       }));
-  
+
       console.log(data);
       alert(data.message);
     } catch (error) {
@@ -197,37 +210,38 @@ export const AuthProvider = ({ children }) => {
       alert("Failed to block user. Please try again.");
     }
   };
-  
-  
+
   const UnblockUser = async (id) => {
     try {
       let token = localStorage.getItem("token");
-  
-      const response = await fetch(`http://localhost:3000/users/unblock/${id}`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-  
+
+      const response = await fetch(
+        `${import.meta.env.VITE_FRONTEND_URI}/users/unblock/${id}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
       if (!response.ok) {
         throw new Error("Failed to unblock user");
       }
-  
+
       const data = await response.json();
-  
+
       setUser((prev) => ({
         ...prev,
-        blockedUsers: prev.blockedUsers.filter(userId => userId !== id) // Remove unblocked user from state
+        blockedUsers: prev.blockedUsers.filter((userId) => userId !== id), // Remove unblocked user from state
       }));
-  
+
       alert(data.message);
     } catch (error) {
       console.error("Error unblocking user:", error);
       alert("Failed to unblock user. Please try again.");
     }
   };
-  
 
   return (
     <AuthContext.Provider
@@ -243,7 +257,7 @@ export const AuthProvider = ({ children }) => {
         socket,
         updateProfile,
         BlockUser,
-        UnblockUser
+        UnblockUser,
       }}
     >
       {children}

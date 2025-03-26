@@ -16,6 +16,10 @@ const ChatList = ({
   const [isFocused, setIsFocused] = useState(false);
   const [selectedTab, setSelectedTab] = useState("All");
 
+  const handleTabStuff = ()=>{
+    
+  }
+
   return (
     <div
       className={`w-1/4 h-full flex flex-col ${

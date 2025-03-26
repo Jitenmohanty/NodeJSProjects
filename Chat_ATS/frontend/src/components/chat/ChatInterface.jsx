@@ -233,7 +233,7 @@ const ChatInterface = ({
   const fetchGroupDetails = useCallback(async (groupId) => {
     try {
       const response = await axios.get(
-        `http://localhost:3000/group-messages/${groupId}/messages`
+        `${import.meta.env.VITE_FRONTEND_URI}/group-messages/${groupId}/messages`
       );
       setGroupData(response.data);
     } catch (error) {
@@ -267,7 +267,7 @@ const ChatInterface = ({
 
         if (selectedUser) {
           response = await axios.get(
-            `http://localhost:3000/messages/${selectedUser._id}`,
+            `${import.meta.env.VITE_FRONTEND_URI}/messages/${selectedUser._id}`,
             {
               params: { page: currentPage, limit: 20 },
             }
@@ -297,7 +297,7 @@ const ChatInterface = ({
           });
         } else if (selectedGroup) {
           response = await axios.get(
-            `http://localhost:3000/group-messages/${selectedGroup._id}/messages`,
+            `${import.meta.env.VITE_FRONTEND_URI}/group-messages/${selectedGroup._id}/messages`,
             {
               params: { page: currentPage, limit: 20 },
             }
@@ -484,7 +484,7 @@ const ChatInterface = ({
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/upload/file",
+        `${import.meta.env.VITE_FRONTEND_URI}/upload/file`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },

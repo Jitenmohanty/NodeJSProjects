@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContex";
+import { toast } from "react-toastify";
 
 const RegisterForm = ({ switchToLogin }) => {
   const { register } = useAuth();
@@ -63,13 +64,13 @@ const RegisterForm = ({ switchToLogin }) => {
       const result = await register(form);
   
       if (result.success) {
-        alert('Registration successful! Please log in.');
+        toast.success('Registration successful! Please log in.');
         switchToLogin();
       } else {
-        alert('Registration failed: ' + result.error);
+        toast.error('Registration failed: ' + result.error);
       }
     } catch (error) {
-      alert('An unexpected error occurred. Please try again.');
+      toast.error('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }

@@ -59,14 +59,14 @@ export const GroupProvider = ({ children }) => {
 
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:3000/groups", {
+      const response = await axios.get(`${import.meta.env.VITE_FRONTEND_URI}/groups`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       setGroups(response.data);
 
       // Fetch unread group messages
       const unreadResponse = await axios.get(
-        "http://localhost:3000/group-messages/unread",
+        `${import.meta.env.VITE_FRONTEND_URI}/group-messages/unread`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
@@ -91,7 +91,7 @@ export const GroupProvider = ({ children }) => {
   const createGroup = async (name, description, members, password = "") => {
     try {
       const response = await axios.post(
-        "http://localhost:3000/groups",
+        `${import.meta.env.VITE_FRONTEND_URI}/groups`,
         {
           name,
           description,
@@ -247,7 +247,7 @@ export const GroupProvider = ({ children }) => {
     async (groupId, password) => {
       try {
         const response = await axios.post(
-          `http://localhost:3000/groups/${groupId}/verify-password`,
+          `${import.meta.env.VITE_FRONTEND_URI}/groups/${groupId}/verify-password`,
           { password },
           {
             headers: {
@@ -255,6 +255,7 @@ export const GroupProvider = ({ children }) => {
             },
           }
         );
+        console.log(response)
 
         if (response.data.message === "Password verified. You can now chat.") {
           addAuthorizedGroup(groupId);
@@ -277,7 +278,7 @@ export const GroupProvider = ({ children }) => {
       setLoading(true);
       
       const response = await axios.post(
-        "http://localhost:3000/groups/add-member",
+        `${import.meta.env.VITE_FRONTEND_URI}/groups/add-member`,
         { groupId, userIds },
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
@@ -310,7 +311,7 @@ export const GroupProvider = ({ children }) => {
    const removeMember = async (groupId, userId) => {
     try {
       const response = await axios.post(
-        "http://localhost:3000/groups/remove-member",
+        `${import.meta.env.VITE_FRONTEND_URI}/groups/remove-member`,
         { groupId, userId },
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },

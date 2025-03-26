@@ -1,5 +1,6 @@
 import { GroupMessage } from "../models/groupMessageSchema.js";
 import { Group } from "../models/groupSchema.js";
+import bcrypt from "bcryptjs"
 
 
 // ✅ Create Group
@@ -95,14 +96,14 @@ export const verifyGroupPassword = async (req, res) => {
         }
 
         // Verify the password
-        // const isMatch = await bcrypt.compare(password, group.password);
-        // if (!isMatch) {
-        //     return res.status(401).json({ error: "Incorrect password" });
-        // }
-
-        if(group.password !== password){
+        const isMatch = await bcrypt.compare(password, group.password);
+        if (!isMatch) {
             return res.status(401).json({ error: "Incorrect password" });
         }
+
+        // if(group.password !== password){
+        //     return res.status(401).json({ error: "Incorrect password" });
+        // }
 
         res.json({ message: "Password verified. You can now chat." });
     } catch (error) {
