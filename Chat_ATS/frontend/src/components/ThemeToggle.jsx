@@ -1,16 +1,13 @@
 import React from "react";
 import { useTheme } from "../context/ThemeContex";
 
-const ThemeToggle = ({ show = false }) => {
+const ThemeToggle = () => {
   const { darkMode, toggleDarkMode } = useTheme();
-
 
   return (
     <button
       onClick={toggleDarkMode}
-      className={`${
-        show ? "fixed bottom-30 left-3" : "fixed top-3 right-8"
-      }   p-2 rounded-full bg-gray-200 dark:bg-gray-800  transition-colors`}
+      className="p-2 rounded-full bg-gray-200 dark:bg-gray-800 transition-colors cursor-pointer"
       aria-label="Toggle theme"
     >
       {darkMode ? (

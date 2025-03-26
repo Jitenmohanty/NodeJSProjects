@@ -26,3 +26,11 @@
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #374151; /* Darker on hover */
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

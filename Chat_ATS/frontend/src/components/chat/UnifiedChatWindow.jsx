@@ -16,7 +16,7 @@ const UnifiedChatWindow = ({
   const [processedMessages, setProcessedMessages] = useState([]);
   const [isBlocked, setIsBlocked] = useState(false);
 
-  const {UnblockUser} = useAuth();
+  const { UnblockUser } = useAuth();
 
   useEffect(() => {
     const checkIfUserIsBlocked = () => {
@@ -30,7 +30,6 @@ const UnifiedChatWindow = ({
       checkIfUserIsBlocked();
     }
   }, [user, selectedUser]); // Re-run when user or selectedUser changes
-
 
   const handleUnBlockUser = async (id) => {
     await UnblockUser(id);
@@ -285,7 +284,7 @@ const UnifiedChatWindow = ({
                   🚫 User Blocked by you
                 </span>
                 <button
-                  onClick={()=>handleUnBlockUser(selectedUser?._id)}
+                  onClick={() => handleUnBlockUser(selectedUser?._id)}
                   className="bg-gray-500 text-white px-2 py-1 rounded-full text-xs hover:bg-gray-600 transition cursor-pointer"
                 >
                   Unblock

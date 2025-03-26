@@ -20,7 +20,6 @@ export const GroupProvider = ({ children }) => {
   // Add state for authorized groups (groups the user has already entered a password for)
   const [authorizedGroups, setAuthorizedGroups] = useState([]);
 
-
   // Load authorized groups from sessionStorage when component mounts
   useEffect(() => {
     if (user) {
@@ -59,9 +58,12 @@ export const GroupProvider = ({ children }) => {
 
     setLoading(true);
     try {
-      const response = await axios.get(`${import.meta.env.VITE_FRONTEND_URI}/groups`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
+      const response = await axios.get(
+        `${import.meta.env.VITE_FRONTEND_URI}/groups`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
       setGroups(response.data);
 
       // Fetch unread group messages
@@ -160,69 +162,69 @@ export const GroupProvider = ({ children }) => {
     [clearUnreadCount]
   );
 
-    // Listen for socket events
-    useEffect(() => {
-      if (!socket || !user) return;
-  
-      // Standard group message reception
-      const handleReceiveGroupMessage = (data) => {
-        console.log(data);
-        if (data.message && data.message.group) {
-          const groupId = data.message.group;
-          // Only update count if this message is not from current user and user is not viewing this group
-          if (data.message.sender !== user.id && activeGroupId !== groupId) {
-            updateUnreadCount(groupId, (count) => (count || 0) + 1);
-          }
-        }
-      };
-  
-      // Special notification for when user is not in the group chat but online
-      const handleGroupNotification = (data) => {
-        if (data.groupId) {
-          // Only increment
-          // if not actively viewing this group
-          let isHaveGroup = groups?.some((group) => group._id === data.groupId);
-          console.log(isHaveGroup);
-          if (isHaveGroup) {
-            updateUnreadCount(data.groupId, (count) => (count || 0) + 1);
-  
-            // Optionally show a browser notification
-            if (Notification.permission === "granted") {
-              const group = getGroupById(data.groupId);
-              const groupName = group ? group.name : "A group";
-              new Notification(`New message in ${groupName}`, {
-                body: `${data.sender.name}: ${data.text.substring(0, 50)}${
-                  data.text.length > 50 ? "..." : ""
-                }`,
-              });
-            }
-          }
-        }
-      };
-  
-      socket.on("receive_group_message", handleReceiveGroupMessage);
-      socket.on("group_message_notification", handleGroupNotification);
-  
-      return () => {
-        socket.off("receive_group_message", handleReceiveGroupMessage);
-        socket.off("group_message_notification", handleGroupNotification);
-      };
-    }, [socket, user, activeGroupId, updateUnreadCount, getGroupById]);
-  
-    // Initial fetch
-    useEffect(() => {
-      if (user) {
-        fetchGroups();
-  
-        // Request notification permission on first load
-        if (
-          Notification.permission !== "denied" &&
-          Notification.permission !== "granted"
-        ) {
-          Notification.requestPermission();
+  // Listen for socket events
+  useEffect(() => {
+    if (!socket || !user) return;
+
+    // Standard group message reception
+    const handleReceiveGroupMessage = (data) => {
+      console.log(data);
+      if (data.message && data.message.group) {
+        const groupId = data.message.group;
+        // Only update count if this message is not from current user and user is not viewing this group
+        if (data.message.sender !== user.id && activeGroupId !== groupId) {
+          updateUnreadCount(groupId, (count) => (count || 0) + 1);
         }
       }
-    }, [user, fetchGroups]);
+    };
+
+    // Special notification for when user is not in the group chat but online
+    const handleGroupNotification = (data) => {
+      if (data.groupId) {
+        // Only increment
+        // if not actively viewing this group
+        let isHaveGroup = groups?.some((group) => group._id === data.groupId);
+        console.log(isHaveGroup);
+        if (isHaveGroup) {
+          updateUnreadCount(data.groupId, (count) => (count || 0) + 1);
+
+          // Optionally show a browser notification
+          if (Notification.permission === "granted") {
+            const group = getGroupById(data.groupId);
+            const groupName = group ? group.name : "A group";
+            new Notification(`New message in ${groupName}`, {
+              body: `${data.sender.name}: ${data.text.substring(0, 50)}${
+                data.text.length > 50 ? "..." : ""
+              }`,
+            });
+          }
+        }
+      }
+    };
+
+    socket.on("receive_group_message", handleReceiveGroupMessage);
+    socket.on("group_message_notification", handleGroupNotification);
+
+    return () => {
+      socket.off("receive_group_message", handleReceiveGroupMessage);
+      socket.off("group_message_notification", handleGroupNotification);
+    };
+  }, [socket, user, activeGroupId, updateUnreadCount, getGroupById]);
+
+  // Initial fetch
+  useEffect(() => {
+    if (user) {
+      fetchGroups();
+
+      // Request notification permission on first load
+      if (
+        Notification.permission !== "denied" &&
+        Notification.permission !== "granted"
+      ) {
+        Notification.requestPermission();
+      }
+    }
+  }, [user, fetchGroups]);
 
   // Check if a user is authorized for a group
   const isAuthorizedForGroup = useCallback(
@@ -247,7 +249,9 @@ export const GroupProvider = ({ children }) => {
     async (groupId, password) => {
       try {
         const response = await axios.post(
-          `${import.meta.env.VITE_FRONTEND_URI}/groups/${groupId}/verify-password`,
+          `${
+            import.meta.env.VITE_FRONTEND_URI
+          }/groups/${groupId}/verify-password`,
           { password },
           {
             headers: {
@@ -255,7 +259,7 @@ export const GroupProvider = ({ children }) => {
             },
           }
         );
-        console.log(response)
+        console.log(response);
 
         if (response.data.message === "Password verified. You can now chat.") {
           addAuthorizedGroup(groupId);
@@ -276,7 +280,7 @@ export const GroupProvider = ({ children }) => {
   const addMembersToGroup = async (groupId, userIds) => {
     try {
       setLoading(true);
-      
+
       const response = await axios.post(
         `${import.meta.env.VITE_FRONTEND_URI}/groups/add-member`,
         { groupId, userIds },
@@ -284,16 +288,16 @@ export const GroupProvider = ({ children }) => {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
-  
+
       // Ensure local state reflects the updated group
       if (response.data.group) {
-        setGroups(prevGroups => 
-          prevGroups.map(gr => 
+        setGroups((prevGroups) =>
+          prevGroups.map((gr) =>
             gr._id === response.data.group._id ? response.data.group : gr
           )
         );
       }
-  
+
       setError(null);
       return response.data;
     } catch (error) {
@@ -306,9 +310,9 @@ export const GroupProvider = ({ children }) => {
       setLoading(false);
     }
   };
-  
-   // Remove a member from a group
-   const removeMember = async (groupId, userId) => {
+
+  // Remove a member from a group
+  const removeMember = async (groupId, userId) => {
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_FRONTEND_URI}/groups/remove-member`,
@@ -317,32 +321,59 @@ export const GroupProvider = ({ children }) => {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
-      
+
       // Update groups state by removing the user from the specified group
       setGroups((prevGroups) =>
         prevGroups.map((group) =>
           group._id === groupId
-            ? { 
-                ...group, 
-                members: group.members.filter(member => 
-                  typeof member === 'object' 
-                    ? member._id !== userId 
+            ? {
+                ...group,
+                members: group.members.filter((member) =>
+                  typeof member === "object"
+                    ? member._id !== userId
                     : member !== userId
-                ) 
+                ),
               }
             : group
         )
       );
-      
+
       return response.data;
     } catch (error) {
-      console.error("Error removing member:", error.response?.data?.message || error.message);
+      console.error(
+        "Error removing member:",
+        error.response?.data?.message || error.message
+      );
       throw error;
     }
-};
+  };
 
+  const updateGroup = async (groupId, updateData) => {
+    try {
+      const token = localStorage.getItem("token");
 
-// console.log(groups)
+      const res = await axios.put(
+        `${import.meta.env.VITE_FRONTEND_URI}/groups/${groupId}`,
+        updateData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      // Final update with server response
+      setGroups((prevGroups) =>
+        prevGroups.map((group) => (group._id === groupId ? res.data : group))
+      );
+      return res.data;
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update group");
+      throw err;
+    }
+  };
+
+  // console.log(groups)
 
   return (
     <GroupContext.Provider
@@ -363,7 +394,8 @@ export const GroupProvider = ({ children }) => {
         addAuthorizedGroup,
         verifyGroupPassword,
         addMembersToGroup,
-        removeMember
+        removeMember,
+        updateGroup,
       }}
     >
       {children}

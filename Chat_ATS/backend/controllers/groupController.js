@@ -41,25 +41,24 @@ export const getGroups = async (req, res) => {
     }
 };
 
-// ✅ Update Group (Only Admin)
-export const updateGroup = async (req, res) => {
-    try {
-        const group = await Group.findById(req.params.groupId);
-        if (!group.admins.includes(req.user.id)) {
-            return res.status(403).json({ error: "Not authorized" });
-        }
+// export const updateGroup = async (req, res) => {
+    //     try {
+        //         const group = await Group.findById(req.params.groupId);
+//         if (!group.admins.includes(req.user.id)) {
+//             return res.status(403).json({ error: "Not authorized" });
+//         }
 
-        const { name, description, members, admins } = req.body;
-        const updatedGroup = await Group.findByIdAndUpdate(
-            req.params.groupId,
-            { name, description, members, admins },
-            { new: true }
-        );
-        res.json(updatedGroup);
-    } catch (error) {
-        res.status(500).json({ error: "Error updating group" });
-    }
-};
+//         const { name, description, members, admins } = req.body;
+//         const updatedGroup = await Group.findByIdAndUpdate(
+//             req.params.groupId,
+//             { name, description, members, admins },
+//             { new: true }
+//         );
+//         res.json(updatedGroup);
+//     } catch (error) {
+//         res.status(500).json({ error: "Error updating group" });
+//     }
+// };
 
 // ✅ Delete Group (Only Admin)
 export const deleteGroup = async (req, res) => {
@@ -89,21 +88,21 @@ export const verifyGroupPassword = async (req, res) => {
         if (!group) {
             return res.status(404).json({ error: "Group not found" });
         }
-
+        
         // Check if the user is a member
         if (!group.members.includes(userId)) {
             return res.status(403).json({ error: "You are not a member of this group" });
         }
 
         // Verify the password
-        const isMatch = await bcrypt.compare(password, group.password);
-        if (!isMatch) {
-            return res.status(401).json({ error: "Incorrect password" });
-        }
-
-        // if(group.password !== password){
+        // const isMatch = await bcrypt.compare(password, group.password);
+        // if (!isMatch) {
         //     return res.status(401).json({ error: "Incorrect password" });
         // }
+
+        if(group.password !== password){
+            return res.status(401).json({ error: "Incorrect password" });
+        }
 
         res.json({ message: "Password verified. You can now chat." });
     } catch (error) {
@@ -165,12 +164,12 @@ export const addMembersToGroup = async (req, res) => {
 export const removeMemberFromGroup = async (req, res) => {
     try {
         const { groupId, userId } = req.body;
-
+        
         const group = await Group.findById(groupId);
         if (!group) {
             return res.status(404).json({ message: "Group not found" });
         }
-
+        
         // Ensure requester is an admin
         if (!group.admins.includes(req.user.id)) {
             return res.status(403).json({ message: "Only admins can remove members" });
@@ -180,7 +179,7 @@ export const removeMemberFromGroup = async (req, res) => {
         if (!group.members.includes(userId)) {
             return res.status(400).json({ message: "User is not a member of this group" });
         }
-
+        
         // Remove the user
         group.members = group.members.filter(member => member.toString() !== userId);
         await group.save();
@@ -190,6 +189,33 @@ export const removeMemberFromGroup = async (req, res) => {
         res.status(500).json({ message: "Server error", error: error.message });
     }
 };
+
+// // ✅ Update Group (Only Admin)
+export const updateGroup = async (req, res) => {
+    try {
+      const { name, bio, password } = req.body;
+      const group = await Group.findById(req.params.groupId);
+      
+      if (!group) {
+          return res.status(404).json({ message: 'Group not found' });
+        }
+  
+      // Check if user is admin
+      if (!group.admins.includes(req.user.id)) {
+        return res.status(403).json({ message: 'Not authorized to update this group' });
+      }
+  
+      group.name = name || group.name;
+      group.bio = bio || group.bio;
+      if (password) group.password = password;
+  
+      await group.save();
+      res.json(group);
+    } catch (err) {
+      res.status(400).json({ message: err.message });
+    }
+  };
+  
 
 
 

@@ -70,7 +70,7 @@ const ChatList = ({
       </div>
 
       {/* Scrollable Chat List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto no-scrollbar">
         <UserList
           users={users}
           setSelectedUser={setSelectedUser}

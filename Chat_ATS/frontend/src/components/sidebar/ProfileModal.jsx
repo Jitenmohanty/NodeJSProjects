@@ -9,6 +9,7 @@ import GroupInfo from "./GroupInfo";
 import UserInfo from "./UserInfo";
 import UserAbout from "./UserAbout";
 import AddMembersModal from "./AddMembersModal";
+import { toast } from "react-toastify";
 
 const ProfileModal = ({ isOpen, onClose, data }) => {
   const { user: currentUser, users } = useAuth();
@@ -65,21 +66,20 @@ const ProfileModal = ({ isOpen, onClose, data }) => {
 
   // Handle adding selected users to the group
   const handleAddMembers = async () => {
-    if (selectedUsers.length === 0) {
-      alert("Please select at least one user.");
+    if (!selectedUsers.length) {
+      toast.warn("Please select at least one user.");
       return;
     }
-
+  
     try {
       setLoading(true);
-      // Use the group ID from the selected group
       await addMembersToGroup(selectGroupMember[0]._id, selectedUsers);
-      alert("Members added successfully!");
+      toast.success("Members added successfully!");
       setSelectedUsers([]);
       setShowAddMemberModal(false);
     } catch (error) {
       console.error("Error adding members:", error);
-      alert(`Failed to add members: ${error.message}`);
+      toast.error(`Failed to add members: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -150,6 +150,7 @@ const ProfileModal = ({ isOpen, onClose, data }) => {
                 users={users}
                 groupId={selectGroupMember[0]._id}
               />
+              
             </div>
           )}
 

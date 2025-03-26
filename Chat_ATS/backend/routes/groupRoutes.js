@@ -16,6 +16,7 @@ const router = express.Router();
 router.post("/", authenticateToken, createGroup);
 router.get("/", authenticateToken, getGroups);
 router.put("/:groupId", authenticateToken, updateGroup);
+
 router.delete("/:groupId", authenticateToken, deleteGroup);
 
 // New Routes

@@ -8,16 +8,10 @@ import ChatList from "./ChatList";
 import ChatWindow from "./ChatWindow";
 import CreateGroupModal from "../groupChat/CreateGroupModal";
 import Sidebar from "../sidebar/Sidebar";
+import { useGroup } from "../../context/GroupContext";
 
-const ChatInterface = ({
-  setOpenChat,
-  unreadMessages,
-  setUnreadMessages,
-  unreadGroupMessages,
-  setUnreadGroupMessages,
-  totalUnreadMessages
-}) => {
-  const { user, fetchUsers, users, setUsers } = useAuth();
+const ChatInterface = () => {
+  const { user, fetchUsers, users, setUsers, socket: pocket } = useAuth();
   const { socket, sendMessage, markMessageAsRead } = useSocket(
     user?.id,
     setUsers
@@ -49,20 +43,135 @@ const ChatInterface = ({
   const [groupHasMore, setGroupHasMore] = useState(true);
   const [groupData, setGroupData] = useState(null);
   const [notification, setNotification] = useState(null);
-  const [selectBot, setSelectedBot] = useState(null)
-
+  const [selectBot, setSelectedBot] = useState(null);
   const { darkMode } = useTheme();
 
+  // Fetch initial users list
   useEffect(() => {
-    if (users.length === 0) fetchUsers();
+    fetchUsers();
   }, []);
+
+  //Home page remove
+  const [unreadMessages, setUnreadMessages] = useState({});
+  const { unreadGroupMessages, setUnreadGroupMessages } = useGroup();
+
+  // Calculate total unread direct messages
+  const directMessagesUnread = Object.values(unreadMessages).reduce(
+    (sum, count) => sum + count,
+    0
+  );
+
+  // Calculate total unread group messages
+  const groupMessagesUnread = Object.values(unreadGroupMessages).reduce(
+    (sum, count) => sum + count,
+    0
+  );
+
+  // Calculate total unread messages (direct + group)
+  const totalUnreadMessages = directMessagesUnread + groupMessagesUnread;
+
+  useEffect(() => {
+    const fetchUnreadmessage = async () => {
+      if (!user) return;
+
+      try {
+        const { data } = await axios.get(
+          `${import.meta.env.VITE_FRONTEND_URI}/messages/unread`
+        );
+        if (data.length > 0) {
+          const unreadCount = {};
+
+          data.forEach((msg) => {
+            unreadCount[msg.sender] = (unreadCount[msg.sender] || 0) + 1;
+          });
+
+          setUnreadMessages(unreadCount);
+        } else {
+          setUnreadMessages({});
+        }
+      } catch (error) {
+        console.log(error.message);
+      }
+    };
+
+    fetchUnreadmessage();
+  }, [user]);
+
+  // Handle socket events for messages and user status
+  useEffect(() => {
+    if (!pocket || !user) return;
+
+    const handleReceiveMessage = (data) => {
+      if ( data.message.sender !== user.id) {
+        setUnreadMessages((prev) => ({
+          ...prev,
+          [data.message.sender]: (prev[data.message.sender] || 0) + 1,
+        }));
+      }
+    };
+
+    const handleGroupMessage = (data) => {
+      console.log("enter");
+      if (data.message.sender._id !== user.id) {
+        setUnreadGroupMessages((prev) => ({
+          ...prev,
+          [data.message.group]: (prev[data.message.group] || 0) + 1,
+        }));
+      }
+    };
+
+    const handleGroupNotification = (data) => {
+      if (data.sender._id !== user.id) {
+        setUnreadGroupMessages((prev) => ({
+          ...prev,
+          [data.groupId]: (prev[data.groupId] || 0) + 1,
+        }));
+      }
+    };
+
+    const handleUserStatus = ({ userId, online }) => {
+      setUsers((prev) =>
+        prev.map((u) => (u._id === userId ? { ...u, online } : u))
+      );
+    };
+
+    const handleUsersStatusUpdate = (users) => {
+      setUsers((prev) =>
+        prev.map((u) => {
+          const updatedUser = users.find((user) => user._id === u._id);
+          return updatedUser ? { ...u, online: updatedUser.online } : u;
+        })
+      );
+    };
+
+    pocket.on("receive_message", handleReceiveMessage);
+    pocket.on("receive_group_message", handleGroupMessage);
+    pocket.on("group_notification", handleGroupNotification);
+    pocket.on("user_status_change", handleUserStatus);
+    pocket.on("users_status_update", handleUsersStatusUpdate);
+
+    // Emit user_connected when socket is ready
+    pocket.emit("user_connected", user.id);
+
+    return () => {
+      pocket.emit("user_disconnected", user.id);
+      pocket.off("receive_message", handleReceiveMessage);
+      pocket.off("receive_group_message", handleGroupMessage);
+      pocket.off("group_notification", handleGroupNotification);
+      pocket.off("user_status_change", handleUserStatus);
+      pocket.off("users_status_update", handleUsersStatusUpdate);
+    };
+  }, [pocket, user, setUsers]);
 
   const showNotification = (sender, text, type = "direct") => {
     if (typeof sender === "object" && sender._id === user.id) return;
-    console.log(sender,"sender")
+    console.log(sender, "sender");
     setNotification({
       sender: typeof sender === "string" ? sender : sender.name || "Unknown",
-      text: text?.length > 30 ? text.substring(0, 30) + "..." : text || "New message",
+      text:
+        text?.length > 30
+          ? text.substring(0, 30) + "..."
+          : text || "New message",
       type,
       timestamp: new Date(),
     });
@@ -168,7 +277,11 @@ const ChatInterface = ({
           messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
         }, 100);
       } else {
-        showNotification(message.sender, message.text || "New message", "group");
+        showNotification(
+          message.sender,
+          message.text || "New message",
+          "group"
+        );
         setUnreadGroupMessages((prev) => ({
           ...prev,
           [message.group]: (prev[message.group] || 0) + 1,
@@ -178,8 +291,11 @@ const ChatInterface = ({
 
     const handleGroupNotification = (data) => {
       const { groupId, sender, text } = data;
-      
-      if (sender._id === user.id || (selectedGroup && selectedGroup._id === groupId)) {
+
+      if (
+        sender._id === user.id ||
+        (selectedGroup && selectedGroup._id === groupId)
+      ) {
         return;
       }
 
@@ -203,7 +319,9 @@ const ChatInterface = ({
     const handleGroupMessageStatus = ({ messageId, readBy }) => {
       setMessages((prev) =>
         prev.map((msg) =>
-          msg._id === messageId || msg.tempId === messageId ? { ...msg, readBy } : msg
+          msg._id === messageId || msg.tempId === messageId
+            ? { ...msg, readBy }
+            : msg
         )
       );
     };
@@ -233,7 +351,9 @@ const ChatInterface = ({
   const fetchGroupDetails = useCallback(async (groupId) => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_FRONTEND_URI}/group-messages/${groupId}/messages`
+        `${
+          import.meta.env.VITE_FRONTEND_URI
+        }/group-messages/${groupId}/messages`
       );
       setGroupData(response.data);
     } catch (error) {
@@ -249,16 +369,16 @@ const ChatInterface = ({
       if (isLoadMore) {
         setLoadingOlder(true);
       }
-      
+
       try {
         let response;
         const currentPage = isLoadMore ? (selectedUser ? page : groupPage) : 1;
-        
+
         // Store the current scroll height if loading older messages
         let scrollHeight = 0;
         let clientHeight = 0;
         let scrollPosition = 0;
-        
+
         if (isLoadMore && chatContainerRef.current) {
           scrollHeight = chatContainerRef.current.scrollHeight;
           clientHeight = chatContainerRef.current.clientHeight;
@@ -297,7 +417,9 @@ const ChatInterface = ({
           });
         } else if (selectedGroup) {
           response = await axios.get(
-            `${import.meta.env.VITE_FRONTEND_URI}/group-messages/${selectedGroup._id}/messages`,
+            `${import.meta.env.VITE_FRONTEND_URI}/group-messages/${
+              selectedGroup._id
+            }/messages`,
             {
               params: { page: currentPage, limit: 20 },
             }
@@ -326,14 +448,15 @@ const ChatInterface = ({
             }
           });
         }
-        
+
         // Maintain scroll position when loading older messages
         if (isLoadMore) {
           setTimeout(() => {
             if (chatContainerRef.current) {
               const newScrollHeight = chatContainerRef.current.scrollHeight;
               const heightDifference = newScrollHeight - scrollHeight;
-              chatContainerRef.current.scrollTop = scrollPosition + heightDifference;
+              chatContainerRef.current.scrollTop =
+                scrollPosition + heightDifference;
             }
             setLoadingOlder(false);
           }, 50);
@@ -420,7 +543,7 @@ const ChatInterface = ({
       const timestamp = new Date().toISOString();
 
       if (selectedUser) {
-        if (user?.blockedUsers?.includes(selectedUser?._id)){
+        if (user?.blockedUsers?.includes(selectedUser?._id)) {
           alert("You cannot send a message to a user you have blocked.");
           return;
         }
@@ -531,7 +654,7 @@ const ChatInterface = ({
         setMessages((prev) => [...prev, tempMessage]);
         sendGroupMessage(selectedGroup._id, "", fileData, tempId);
       }
-      
+
       // Scroll to bottom when sending a file
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -563,7 +686,12 @@ const ChatInterface = ({
 
   return (
     <div className={`fixed inset-0 flex`}>
-      <Sidebar setSelectedBot={setSelectedBot} setSelectedUser={setSelectedUser} setSelectedGroup={setSelectedGroup} totalUnreadMessages={totalUnreadMessages}/>
+      <Sidebar
+        setSelectedBot={setSelectedBot}
+        setSelectedUser={setSelectedUser}
+        setSelectedGroup={setSelectedGroup}
+        totalUnreadMessages={totalUnreadMessages}
+      />
       <ChatList
         users={users}
         setSelectedUser={setSelectedUser}
@@ -578,7 +706,6 @@ const ChatInterface = ({
         selectedUser={selectedUser}
         selectBot={selectBot}
         setSelectedUser={setSelectedUser}
-        setOpenChat={setOpenChat}
         selectedGroup={selectedGroup}
         resetSelection={resetSelection}
         messages={messages}

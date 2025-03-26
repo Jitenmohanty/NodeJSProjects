@@ -18,7 +18,6 @@ const ChatHeader = React.memo(
   ({
     selectedUser,
     setSelectedUser,
-    setOpenChat,
     group,
     onBack,
     selectBot,
@@ -227,13 +226,7 @@ const ChatHeader = React.memo(
             </div>
           )}
 
-          {/* Close Chat Button */}
-          <button
-            onClick={() => setOpenChat(false)}
-            className="text-white hover:text-gray-200 p-1 "
-          >
-            <X className="w-5 h-5" />
-          </button>
+          
         </div>
 
         {/* Click outside to close menu */}

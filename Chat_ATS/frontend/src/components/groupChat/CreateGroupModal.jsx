@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useGroup } from '../../context/GroupContext';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff, X } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const CreateGroupModal = ({ isOpen, onClose }) => {
   const { users } = useAuth();
@@ -15,21 +16,29 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+  
     if (!name.trim() || !password.trim()) {
-      alert('Group name and password are required');
+      toast.warn("Group name and password are required! ⚠️");
       return;
     }
-
+    if (selectedMembers.length === 0) {
+      toast.warn("You have to add at least one member ⚠️");
+      return;
+    }
+  
     setIsCreating(true);
     const result = await createGroup(name, description, selectedMembers, password);
     setIsCreating(false);
-    
+  
     if (result.success) {
+      toast.success("Group created successfully! 🎉");
       onClose();
-      setName('');
-      setDescription('');
-      setPassword('');
+      setName("");
+      setDescription("");
+      setPassword("");
       setSelectedMembers([]);
+    } else {
+      toast.error("Failed to create group. Please try again.");
     }
   };
 

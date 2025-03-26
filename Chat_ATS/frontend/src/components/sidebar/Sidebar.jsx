@@ -12,19 +12,44 @@ import SettingsModal from "./SettingModal";
 import { useAuth } from "../../context/AuthContext";
 import ThemeToggle from "../ThemeToggle";
 import { useTheme } from "../../context/ThemeContex";
+import { toast } from "react-toastify";
 
-const Sidebar = ({ totalUnreadMessages, setSelectedBot, setSelectedGroup, setSelectedUser }) => {
+const Sidebar = ({
+  totalUnreadMessages,
+  setSelectedBot,
+  setSelectedGroup,
+  setSelectedUser,
+}) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  let show = true;
 
   const { logout, user } = useAuth();
   const { darkMode } = useTheme();
 
   const handleLogout = () => {
-    if (window.confirm("Are you sure you want to logout?")) {
-      logout();
-    }
+    toast.info(
+      <div>
+        <p>Are you sure you want to logout?</p>
+        <div className="flex gap-2 mt-2">
+          <button
+            onClick={() => {
+              logout();
+              toast.dismiss();
+            }}
+            className="bg-red-500 text-white px-3 py-1 rounded-md"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss()}
+            className="bg-gray-500 text-white px-3 py-1 rounded-md"
+          >
+            No
+          </button>
+        </div>
+      </div>,
+      { autoClose: false, closeOnClick: false }
+    );
   };
 
   const handleChatBot = useCallback(() => {
@@ -34,7 +59,8 @@ const Sidebar = ({ totalUnreadMessages, setSelectedBot, setSelectedGroup, setSel
       _id: "dummy_bot_123",
       name: "ChatBot AI",
       online: true,
-      profilePicture: "https://images.pexels.com/photos/8566531/pexels-photo-8566531.jpeg?auto=compress&cs=tinysrgb&w=600",
+      profilePicture:
+        "https://images.pexels.com/photos/8566531/pexels-photo-8566531.jpeg?auto=compress&cs=tinysrgb&w=600",
     };
 
     setSelectedBot(dummyBot);
@@ -55,13 +81,21 @@ const Sidebar = ({ totalUnreadMessages, setSelectedBot, setSelectedGroup, setSel
             onClick={() => handleChatBot()}
             className="p-2 rounded-lg hover:bg-purple-600 transition duration-300 ease-in-out cursor-pointer shadow-lg shadow-purple-500/50 animate-bounce motion-reduce:animate-none"
           >
-            <BotMessageSquare className={`w-8 ${darkMode ? "text-yellow-400" : "text-purple-700"}`} />
+            <BotMessageSquare
+              className={`w-8 ${
+                darkMode ? "text-yellow-400" : "text-purple-700"
+              }`}
+            />
           </div>
           <div className="p-2 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out cursor-pointer">
-            <GroupIcon className={`w-8 ${darkMode ? "text-white" : "text-black"}`} />
+            <GroupIcon
+              className={`w-8 ${darkMode ? "text-white" : "text-black"}`}
+            />
           </div>
           <div className="p-2 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out cursor-pointer relative">
-            <MessageSquare className={`w-8 ${darkMode ? "text-white" : "text-black"}`} />
+            <MessageSquare
+              className={`w-8 ${darkMode ? "text-white" : "text-black"}`}
+            />
             {totalUnreadMessages > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                 {totalUnreadMessages > 99 ? "99+" : totalUnreadMessages}
@@ -79,32 +113,46 @@ const Sidebar = ({ totalUnreadMessages, setSelectedBot, setSelectedGroup, setSel
                 className="w-8 h-8 rounded-full object-cover"
               />
             ) : (
-              <User className={`w-8 ${darkMode ? "text-white" : "text-black"}`} />
+              <User
+                className={`w-8 ${darkMode ? "text-white" : "text-black"}`}
+              />
             )}
           </div>
         </div>
 
         {/* Bottom Icons */}
         <div className="flex flex-col gap-4 relative">
-          <ThemeToggle show={show} />
+          <div className="ml-1">
+            <ThemeToggle />
+          </div>
           <div
             className="p-2 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out cursor-pointer"
             onClick={() => setIsSettingsOpen(true)}
           >
-            <Settings className={`w-8 ${darkMode ? "text-white" : "text-black"}`} />
+            <Settings
+              className={`w-8 ${darkMode ? "text-white" : "text-black"}`}
+            />
           </div>
           <div
             onClick={handleLogout}
             className="p-2 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out cursor-pointer"
           >
-            <LogOut className={`w-8 ${darkMode ? "text-white" : "text-black"}`} />
+            <LogOut
+              className={`w-8 ${darkMode ? "text-white" : "text-black"}`}
+            />
           </div>
         </div>
       </div>
 
       {/* Modals */}
-      <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <ProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+      />
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </>
   );
 };

@@ -2,6 +2,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 import useSocket from "../hooks/useSocket";
+import { toast } from "react-toastify";
+
 
 const AuthContext = createContext(null);
 
@@ -176,11 +178,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+
   const BlockUser = async (id) => {
     try {
       console.log("Blocking user...");
       let token = localStorage.getItem("token");
-
+  
       const response = await fetch(
         `${import.meta.env.VITE_FRONTEND_URI}/users/block/${id}`,
         {
@@ -191,30 +194,29 @@ export const AuthProvider = ({ children }) => {
           },
         }
       );
-
+  
       if (!response.ok) {
         throw new Error("Failed to block user");
       }
-
+  
       const data = await response.json();
-
+  
       setUser((prev) => ({
         ...prev,
-        blockedUsers: data.blockedUsers, // Updating blockedUsers correctly
+        blockedUsers: data.blockedUsers,
       }));
-
-      console.log(data);
-      alert(data.message);
+  
+      toast.success(`User blocked successfully! 🚫`);
     } catch (error) {
       console.error("Error blocking user:", error);
-      alert("Failed to block user. Please try again.");
+      toast.error("Failed to block user. Please try again.");
     }
   };
-
+  
   const UnblockUser = async (id) => {
     try {
       let token = localStorage.getItem("token");
-
+  
       const response = await fetch(
         `${import.meta.env.VITE_FRONTEND_URI}/users/unblock/${id}`,
         {
@@ -224,24 +226,25 @@ export const AuthProvider = ({ children }) => {
           },
         }
       );
-
+  
       if (!response.ok) {
         throw new Error("Failed to unblock user");
       }
-
+  
       const data = await response.json();
-
+  
       setUser((prev) => ({
         ...prev,
-        blockedUsers: prev.blockedUsers.filter((userId) => userId !== id), // Remove unblocked user from state
+        blockedUsers: prev.blockedUsers.filter((userId) => userId !== id),
       }));
-
-      alert(data.message);
+  
+      toast.success(`User unblocked successfully! ✅`);
     } catch (error) {
       console.error("Error unblocking user:", error);
-      alert("Failed to unblock user. Please try again.");
+      toast.error("Failed to unblock user. Please try again.");
     }
   };
+  
 
   return (
     <AuthContext.Provider

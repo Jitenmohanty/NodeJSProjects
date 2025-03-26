@@ -1,19 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
+import React, { useState } from "react";
 import { useTheme } from "../context/ThemeContex";
-import { useGroup } from "../context/GroupContext";
-import axios from "axios";
-import ChatInterface from "./chat/ChatInterface";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { featureItems } from "../constants/featureItem.jsx";
 
 const Home = () => {
-  const [openChat, setOpenChat] = useState(false);
-  const [unreadMessages, setUnreadMessages] = useState({});
   const [featureHovered, setFeatureHovered] = useState(null);
 
-  const { user, socket, fetchUsers, setUsers } = useAuth();
-  const { unreadGroupMessages, setUnreadGroupMessages } = useGroup();
   const { darkMode } = useTheme();
 
   // Animation variants
@@ -46,133 +38,12 @@ const Home = () => {
     },
   };
 
-  useEffect(() => {
-    const fetchUnreadmessage = async () => {
-      if (!user) return;
-
-      try {
-        const { data } = await axios.get(
-          `${import.meta.env.VITE_FRONTEND_URI}/messages/unread`
-        );
-        if (data.length > 0) {
-          const unreadCount = {};
-
-          data.forEach((msg) => {
-            unreadCount[msg.sender] = (unreadCount[msg.sender] || 0) + 1;
-          });
-
-          setUnreadMessages(unreadCount);
-        } else {
-          setUnreadMessages({});
-        }
-      } catch (error) {
-        console.log(error.message);
-      }
-    };
-
-    fetchUnreadmessage();
-  }, [user]);
-
-  // Handle socket events for messages and user status
-  useEffect(() => {
-    if (!socket || !user) return;
-
-    const handleReceiveMessage = (data) => {
-      if (!openChat || data.message.sender !== user.id) {
-        setUnreadMessages((prev) => ({
-          ...prev,
-          [data.message.sender]: (prev[data.message.sender] || 0) + 1,
-        }));
-      }
-    };
-
-    const handleGroupMessage = (data) => {
-      console.log("enter");
-      if (data.message.sender._id !== user.id) {
-        setUnreadGroupMessages((prev) => ({
-          ...prev,
-          [data.message.group]: (prev[data.message.group] || 0) + 1,
-        }));
-      }
-    };
-
-    const handleGroupNotification = (data) => {
-      if (data.sender._id !== user.id) {
-        setUnreadGroupMessages((prev) => ({
-          ...prev,
-          [data.groupId]: (prev[data.groupId] || 0) + 1,
-        }));
-      }
-    };
-
-    const handleUserStatus = ({ userId, online }) => {
-      setUsers((prev) =>
-        prev.map((u) => (u._id === userId ? { ...u, online } : u))
-      );
-    };
-
-    const handleUsersStatusUpdate = (users) => {
-      setUsers((prev) =>
-        prev.map((u) => {
-          const updatedUser = users.find((user) => user._id === u._id);
-          return updatedUser ? { ...u, online: updatedUser.online } : u;
-        })
-      );
-    };
-
-    socket.on("receive_message", handleReceiveMessage);
-    socket.on("receive_group_message", handleGroupMessage);
-    socket.on("group_notification", handleGroupNotification);
-    socket.on("user_status_change", handleUserStatus);
-    socket.on("users_status_update", handleUsersStatusUpdate);
-
-    // Emit user_connected when socket is ready
-    socket.emit("user_connected", user.id);
-
-    return () => {
-      socket.emit("user_disconnected", user.id);
-      socket.off("receive_message", handleReceiveMessage);
-      socket.off("receive_group_message", handleGroupMessage);
-      socket.off("group_notification", handleGroupNotification);
-      socket.off("user_status_change", handleUserStatus);
-      socket.off("users_status_update", handleUsersStatusUpdate);
-    };
-  }, [socket, openChat, user, setUsers]);
-
-  // Fetch initial users list
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  // Calculate total unread direct messages
-  const directMessagesUnread = Object.values(unreadMessages).reduce(
-    (sum, count) => sum + count,
-    0
-  );
-
-  // Calculate total unread group messages
-  const groupMessagesUnread = Object.values(unreadGroupMessages).reduce(
-    (sum, count) => sum + count,
-    0
-  );
-
-  // Calculate total unread messages (direct + group)
-  const totalUnreadMessages = directMessagesUnread + groupMessagesUnread;
-
-  const handleOpenChat = () => {
-    setOpenChat(true);
-  };
-
-  const handleCloseChat = () => {
-    setOpenChat(false);
-  };
-
   return (
     <motion.div
-      className={`flex flex-col items-center justify-center min-h-[calc(80vh-64px)] mt-12 p-4 ${
+      className={`flex flex-col items-center justify-center min-h-[calc(80vh-64px)] rounded-xl p-4 ${
         darkMode
-          ? "bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"
-          : "bg-gradient-to-br from-blue-50 via-white to-blue-50"
+          ? "bg-gradient-to-br from-gray-600 via-gray-800 to-gray-900"
+          : "bg-gradient-to-br from-blue-200 via-white to-blue-50"
       } transition-colors duration-300`}
     >
       <motion.div
@@ -290,67 +161,6 @@ const Home = () => {
           ))}
         </motion.div>
       </motion.div>
-
-      {/* Floating Chat Button */}
-      <motion.button
-        onClick={handleOpenChat}
-        className="fixed bottom-8 right-8 flex items-center gap-3 px-6 py-3 rounded-full shadow-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium"
-        initial={{ y: 100, opacity: 0 }}
-        animate={{
-          y: 0,
-          opacity: 1,
-          boxShadow: "0 10px 25px rgba(59, 130, 246, 0.5)",
-        }}
-        whileHover={{
-          background: [
-            "linear-gradient(to right, #3B82F6, #2563EB)",
-            "linear-gradient(to right, #2563EB, #1D4ED8)",
-          ],
-          scale: 1.05,
-          boxShadow: "0 15px 30px rgba(59, 130, 246, 0.7)",
-        }}
-        whileTap={{ scale: 0.95 }}
-        transition={{
-          y: { type: "spring", stiffness: 300 },
-          background: { duration: 2, repeat: Infinity, repeatType: "reverse" },
-        }}
-      >
-        <div className="relative">
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            />
-          </svg>
-          {totalUnreadMessages > 0 && (
-            <motion.div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
-              {totalUnreadMessages > 99 ? "99+" : totalUnreadMessages}
-            </motion.div>
-          )}
-        </div>
-        <span>Open Chat</span>
-      </motion.button>
-
-      {/* Chat Interface */}
-      <AnimatePresence>
-        {openChat && (
-          <ChatInterface
-            setOpenChat={handleCloseChat}
-            unreadMessages={unreadMessages}
-            setUnreadMessages={setUnreadMessages}
-            unreadGroupMessages={unreadGroupMessages}
-            setUnreadGroupMessages={setUnreadGroupMessages}
-            totalUnreadMessages={totalUnreadMessages}
-          />
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 };

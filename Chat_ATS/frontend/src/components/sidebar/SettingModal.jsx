@@ -43,15 +43,21 @@ const SettingsModal = ({ isOpen, onClose }) => {
   };
 
   const handleSubmit = async () => {
-    setLoading(true);
-    const response = await updateProfile(user.id, form);
-    setLoading(false);
-
-    if (response.success) {
-      toast.success("Profile updated successfully!");
-      setIsEditing(false);
-    } else {
-      toast.error(response.error);
+    try {
+      setLoading(true);
+      const response = await updateProfile(user.id, form);
+  
+      if (response.success) {
+        toast.success("Profile updated successfully! 🎉");
+        setIsEditing(false);
+      } else {
+        toast.error(`Update failed: ${response.error}`);
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred. Please try again.");
+      console.error("Profile update error:", error);
+    } finally {
+      setLoading(false);
     }
   };
 

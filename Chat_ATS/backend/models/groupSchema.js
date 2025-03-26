@@ -7,6 +7,7 @@ const groupSchema = new mongoose.Schema({
     creator: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     admins: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    bio:{type: String},
     password: { type: String, required: true }, // Store hashed password
     createdAt: { type: Date, default: Date.now },
 });

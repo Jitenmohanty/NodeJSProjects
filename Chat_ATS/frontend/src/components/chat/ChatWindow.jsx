@@ -9,7 +9,6 @@ import BotChatWindow from "../bot/BotChatWindow";
 const ChatWindow = ({
   selectedUser,
   setSelectedUser,
-  setOpenChat,
   selectedGroup,
   resetSelection,
   messages,
@@ -67,7 +66,6 @@ const ChatWindow = ({
       <ChatHeader
         selectedUser={selectedUser}
         setSelectedUser={setSelectedUser}
-        setOpenChat={setOpenChat}
         group={selectedGroup}
         onBack={resetSelection}
         selectBot={selectBot}
