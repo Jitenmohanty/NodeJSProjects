@@ -4,13 +4,13 @@ import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContex";
 
 const GroupList = ({
+  groups,
   setSelectedGroup,
   unreadGroupMessages,
   setSelectedUser,
-  setSelectedBot
+  setSelectedBot,
 }) => {
   const {
-    groups,
     loading,
     isAuthorizedForGroup,
     verifyGroupPassword,
@@ -50,7 +50,7 @@ const GroupList = ({
   const handleGroupSelection = useCallback(
     (group) => {
       setSelectedUser(null);
-      setSelectedBot(null)
+      setSelectedBot(null);
       // Check if the user is an admin
       const isAdmin = group.admins?.some((admin) => admin._id === user?.id);
       // Check if user has already entered password for this group
@@ -89,26 +89,29 @@ const GroupList = ({
         groups.map((group) => (
           <div
             key={group._id}
-            className="flex items-center justify-between p-3 hover:bg-gray-700 cursor-pointer transition relative"
+            className={`flex items-center justify-between px-2 py-3  cursor-pointer border-b-[1px] border-gray-600 transition relative ${darkMode ? 
+              "hover:bg-gray-700 hover:bg-opacity-80" : 
+              "hover:bg-gray-300 hover:bg-opacity-90"}
+          `}
             onClick={() => handleGroupSelection(group)}
           >
             {/* Group Icon & Details */}
             <div className="flex items-center gap-3">
               {/* Group Icon */}
-              <div className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-lg rounded-full border-2 border-gray-500">
+              <div className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-lg rounded-full border-2 border-gray-500">
                 {group.name?.charAt(0).toUpperCase()}
               </div>
 
               {/* Group Name & Member Count */}
               <div>
                 <h3
-                  className={`font-semibold text-lg ${
+                  className={`font-semibold text-md ${
                     darkMode ? "text-gray-200" : "text-gray-900"
                   }`}
                 >
                   {group.name}
                 </h3>
-                <p className="text-gray-400 text-sm">
+                <p className="text-gray-400 text-xs">
                   {group.members?.length || 0} members
                 </p>
               </div>
@@ -156,7 +159,7 @@ const GroupList = ({
           >
             {/* Rest of the modal code remains unchanged */}
             {/* ... */}
-            
+
             {/* Modal Header */}
             <div className="mb-5">
               <h3

@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Menu, Search, ArrowLeft } from "lucide-react";
 import UserList from "./UserList";
 import GroupList from "../groupChat/GroupList";
+import { useGroup } from "../../context/GroupContext";
 
 const ChatList = ({
   users,
@@ -11,14 +12,103 @@ const ChatList = ({
   unreadGroupMessages,
   openGroupModal,
   darkMode,
-  setSelectedBot
+  setSelectedBot,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [selectedTab, setSelectedTab] = useState("All");
+  const [search, setSearch] = useState("");
+  const { groups } = useGroup();
 
-  const handleTabStuff = ()=>{
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [filteredGroups, setFilteredGroups] = useState([]);
+
+
+  // Memoize the original data
+  const memoizedUsers = useMemo(() => users, [users]);
+  const memoizedGroups = useMemo(() => groups, [groups]);
+
+  // Debounce function
+  const debounce = (func, delay) => {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => func(...args), delay);
+    };
+  };
+
+  // Filter function for both users and groups
+  const filterItems = useCallback((searchTerm) => {
+    if (!searchTerm.trim()) {
+      setFilteredUsers(memoizedUsers);
+      setFilteredGroups(memoizedGroups);
+      return;
+    }
+
+    const lowerSearch = searchTerm.toLowerCase();
     
-  }
+    setFilteredUsers(
+      memoizedUsers.filter(user => 
+        user.name.toLowerCase().includes(lowerSearch)
+      )
+    );
+    
+    setFilteredGroups(
+      memoizedGroups.filter(group => 
+        group.name.toLowerCase().includes(lowerSearch)
+      )
+    );
+  }, [memoizedUsers, memoizedGroups]);
+
+  // Create debounced version of filterItems
+  const debouncedFilter = useMemo(
+    () => debounce(filterItems, 300),
+    [filterItems]
+  );
+
+  // Handle search input changes
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearch(value);
+    debouncedFilter(value);
+  };
+
+  // Initialize filtered data
+  useEffect(() => {
+    setFilteredUsers(memoizedUsers);
+    setFilteredGroups(memoizedGroups);
+  }, [memoizedUsers, memoizedGroups]);
+
+  // Filter items based on selected tab
+  const getFilteredItems = (items, isGroup = false) => {
+    if (search.length > 0) {
+      return isGroup ? filteredGroups : filteredUsers;
+    }
+  
+    switch (selectedTab) {
+      case "Unread":
+        return items.filter(item => {
+          const unreadCount = isGroup 
+            ? unreadGroupMessages[item._id] 
+            : unreadMessages[item._id];
+          return unreadCount > 0;
+        });
+      
+      case "Groups":
+        return isGroup ? items : [];
+      
+      case "Favorites":
+        // Implement favorite logic (assuming items have isFavorite property)
+        return items.filter(item => item.isFavorite);
+      
+      default:
+        return items;
+    }
+  };
+
+  const filteredUserList = getFilteredItems(users);
+  const filteredGroupList = getFilteredItems(groups, true);
+  console.log(filteredGroupList)
+  console.log(filteredUserList)
 
   return (
     <div
@@ -29,24 +119,30 @@ const ChatList = ({
       } border-gray-400 border-r-[1px]`}
     >
       {/* Header */}
-      <div className="h-[9.40vh] flex justify-between items-center p-2 ">
+      <div className="h-[9.40vh] flex justify-between items-center p-2">
         <h1 className="font-bold text-2xl">Chats</h1>
         <Menu />
       </div>
 
       {/* Search Bar */}
-      <div className="mx-2 mb-2 p-2 rounded-[8px] flex items-center bg-gray-700 transition-all duration-300">
+      <div className={`mx-2 mb-2 p-1 rounded-[8px] flex items-center ${
+        darkMode ? "bg-gray-700" : "bg-gray-200"
+      } transition-all duration-300`}>
         <button onClick={() => setIsFocused(false)}>
           {isFocused ? (
-            <ArrowLeft className="text-white w-4 mx-4 cursor-pointer" />
+            <ArrowLeft className={`w-4 mx-4 ${darkMode ? "text-white" : "text-gray-700"}`} />
           ) : (
-            <Search className="text-white w-4 mx-4 cursor-pointer" />
+            <Search className={`w-4 mx-4 ${darkMode ? "text-white" : "text-gray-700"}`} />
           )}
         </button>
         <input
           type="text"
-          className="bg-transparent text-white outline-none w-full placeholder-gray-400 transition-all duration-300"
-          placeholder="Search..."
+          value={search}
+          className={`bg-transparent ${
+            darkMode ? "text-white" : "text-gray-900"
+          } outline-none w-full placeholder-gray-400 transition-all duration-300`}
+          placeholder="Search users or groups..."
+          onChange={handleSearch}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
         />
@@ -58,10 +154,14 @@ const ChatList = ({
           <button
             key={tab}
             onClick={() => setSelectedTab(tab)}
-            className={`px-3 py-1 rounded-full text-sm font-normal transition-all duration-300 ${
+            className={`px-2 py-1 rounded-full text-xs font-normal transition-all duration-300 cursor-pointer ${
               selectedTab === tab
-                ? "bg-blue-600 text-white shadow-md"
-                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                ? darkMode
+                  ? "bg-blue-600 text-white"
+                  : "bg-blue-500 text-white"
+                : darkMode
+                  ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
             {tab}
@@ -71,25 +171,39 @@ const ChatList = ({
 
       {/* Scrollable Chat List */}
       <div className="flex-1 overflow-y-auto no-scrollbar">
-        <UserList
-          users={users}
-          setSelectedUser={setSelectedUser}
-          setSelectedGroup={setSelectedGroup}
-          unreadMessages={unreadMessages}
-          setSelectedBot={setSelectedBot}
-        />
-        <GroupList
-          setSelectedGroup={setSelectedGroup}
-          unreadGroupMessages={unreadGroupMessages}
-          setSelectedUser={setSelectedUser}
-          setSelectedBot={setSelectedBot}
-        />
+        {selectedTab !== "Groups" && (
+          <UserList
+            users={filteredUserList}
+            setSelectedUser={setSelectedUser}
+            setSelectedGroup={setSelectedGroup}
+            unreadMessages={unreadMessages}
+            setSelectedBot={setSelectedBot}
+          />
+        )}
+
+        {(selectedTab === "All" || selectedTab === "Groups" || selectedTab === "Unread") && (
+          <GroupList
+            groups={filteredGroupList}
+            setSelectedGroup={setSelectedGroup}
+            unreadGroupMessages={unreadGroupMessages}
+            setSelectedUser={setSelectedUser}
+            setSelectedBot={setSelectedBot}
+          />
+        )}
+
+        {search.length > 0 && filteredUserList.length === 0 && filteredGroupList.length === 0 && (
+          <div className={`p-4 text-center ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            No results found for "{search}"
+          </div>
+        )}
       </div>
 
-      {/* Create Group Button (Sticks to Bottom) */}
+      {/* Create Group Button */}
       <button
         onClick={openGroupModal}
-        className="w-full p-3 bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+        className={`w-full p-3 ${
+          darkMode ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-500 hover:bg-blue-600"
+        } text-white transition-colors`}
       >
         Create New Group
       </button>

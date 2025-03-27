@@ -1,17 +1,16 @@
 import React, { useCallback } from "react";
 import { useTheme } from "../../context/ThemeContex";
 
-const UserList = ({ users, setSelectedUser, unreadMessages, setSelectedGroup,setSelectedBot }) => {
+const UserList = ({ users, setSelectedUser, unreadMessages, setSelectedGroup, setSelectedBot }) => {
   const { darkMode } = useTheme();
 
-  // Memoize function to prevent unnecessary re-renders
   const handleUserSelection = useCallback(
     (user) => {
       setSelectedGroup(null);
-      setSelectedBot(null)
+      setSelectedBot(null);
       setSelectedUser(user);
     },
-    [setSelectedGroup, setSelectedUser,setSelectedBot]
+    [setSelectedGroup, setSelectedUser, setSelectedBot]
   );
 
   return (
@@ -20,7 +19,14 @@ const UserList = ({ users, setSelectedUser, unreadMessages, setSelectedGroup,set
         <div
           key={u._id}
           onClick={() => handleUserSelection(u)}
-          className="flex items-center gap-3 py-2 px-2 hover:bg-opacity-75 cursor-pointer border-b border-gray-300 dark:border-gray-700 transition-all duration-300 hover:bg-gray-700"
+          className={`
+            flex items-center gap-3 py-3 px-2 cursor-pointer 
+            border-b border-gray-300 dark:border-gray-700 
+            transition-all duration-300 
+            ${darkMode ? 
+              "hover:bg-gray-700 hover:bg-opacity-80" : 
+              "hover:bg-gray-300 hover:bg-opacity-90"}
+          `}
         >
           {/* Profile Picture */}
           <div className="relative">
@@ -28,10 +34,10 @@ const UserList = ({ users, setSelectedUser, unreadMessages, setSelectedGroup,set
               <img
                 src={u.profilePicture}
                 alt="Profile Picture"
-                className="w-12 h-12 rounded-full border-2 border-gray-500 object-cover"
+                className="w-10 h-10 rounded-full border-2 border-gray-500 object-cover"
               />
             ) : (
-              <div className="w-12 h-12 border-gray-500 border-2 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 border-gray-500 border-2 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-semibold text-lg">
                   {u.name?.charAt(0).toUpperCase()}
                 </span>
@@ -55,10 +61,10 @@ const UserList = ({ users, setSelectedUser, unreadMessages, setSelectedGroup,set
 
           {/* User Name & Online Status */}
           <div className="flex-1">
-            <h3 className={`font-semibold text-lg ${!darkMode ? "text-gray-900" : "text-gray-200"}`}>
+            <h3 className={`font-semibold text-md ${!darkMode ? "text-gray-900" : "text-gray-200"}`}>
               {u.name}
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-xs text-gray-600 dark:text-gray-400">
               {u.online ? "Online" : "Offline"}
             </p>
           </div>
@@ -68,5 +74,4 @@ const UserList = ({ users, setSelectedUser, unreadMessages, setSelectedGroup,set
   );
 };
 
-// Prevents unnecessary re-renders
 export default React.memo(UserList);

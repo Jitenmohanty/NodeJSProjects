@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Loan Application",
+  "type": "object",
+  "properties": {
+    "businessName": {
+      "type": "string",
+      "title": "Business Name",
+      "minLength": 3
+    },
+    "gstin": {
+      "type": "string",
+      "title": "GSTIN",
+      "pattern": "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$",
+      "errorMessage": "Invalid GSTIN format"
+    },
+    "directors": {
+      "type": "array",
+      "title": "Directors",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Director Name",
+            "minLength": 3
+          },
+          "panNumber": {
+            "type": "string",
+            "title": "PAN Number",
+            "pattern": "[A-Z]{5}[0-9]{4}[A-Z]{1}",
+            "errorMessage": "Invalid PAN format"
+          },
+          "tags": {
+            "type": "array",
+            "title": "Tags",
+            "items": { "type": "string" },
+            "default": ["Director"]
+          }
+        },
+        "required": ["name", "panNumber"]
+      }
+    },
+    "creditScore": {
+      "type": "number",
+      "title": "Credit Score",
+      "minimum": 300,
+      "maximum": 900
+    },
+    "loanAmount": {
+      "type": "number",
+      "title": "Required Loan Amount",
+      "minimum": 50000,
+      "maximum": 500000
+    }
+  },
+  "dependencies": {
+    "creditScore": {
+      "oneOf": [
+        {
+          "properties": {
+            "creditScore": { "minimum": 700 }
+          }
+        },
+        {
+          "properties": {
+            "creditScore": { "maximum": 699 },
+            "guarantors": {
+              "type": "array",
+              "title": "Guarantors (Required if Credit Score < 700)",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "title": "Guarantor Name" },
+                  "panNumber": {
+                    "type": "string",
+                    "title": "PAN Number",
+                    "pattern": "[A-Z]{5}[0-9]{4}[A-Z]{1}",
+                    "errorMessage": "Invalid PAN format"
+                  },
+                  "relationship": {
+                    "type": "string",
+                    "title": "Relationship with Applicant",
+                    "enum": ["Father", "Mother", "Brother", "Sister", "Spouse", "Other"]
+                  },
+                  "relation": {
+                    "type": "string",
+                    "title": "Specify Relationship",
+                    "default": "",
+                    "dependencies": {
+                      "relationship": { "enum": ["Other"] }
+                    }
+                  }
+                },
+                "required": ["name", "panNumber", "relationship"]
+              }
+            },
+            "bankStatement": {
+              "type": "array",
+              "title": "Upload Bank Statement",
+              "items": {
+                "type": "string",
+                "format": "data-url"
+              }
+            }
+          },
+          "required": ["guarantors", "bankStatement"]
+        }
+      ]
+    }
+  },
+  "required": ["businessName", "gstin", "creditScore", "loanAmount"]
+}

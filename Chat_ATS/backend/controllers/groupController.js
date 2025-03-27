@@ -41,24 +41,6 @@ export const getGroups = async (req, res) => {
     }
 };
 
-// export const updateGroup = async (req, res) => {
-    //     try {
-        //         const group = await Group.findById(req.params.groupId);
-//         if (!group.admins.includes(req.user.id)) {
-//             return res.status(403).json({ error: "Not authorized" });
-//         }
-
-//         const { name, description, members, admins } = req.body;
-//         const updatedGroup = await Group.findByIdAndUpdate(
-//             req.params.groupId,
-//             { name, description, members, admins },
-//             { new: true }
-//         );
-//         res.json(updatedGroup);
-//     } catch (error) {
-//         res.status(500).json({ error: "Error updating group" });
-//     }
-// };
 
 // ✅ Delete Group (Only Admin)
 export const deleteGroup = async (req, res) => {
@@ -93,16 +75,14 @@ export const verifyGroupPassword = async (req, res) => {
         if (!group.members.includes(userId)) {
             return res.status(403).json({ error: "You are not a member of this group" });
         }
+        
 
         // Verify the password
-        // const isMatch = await bcrypt.compare(password, group.password);
-        // if (!isMatch) {
-        //     return res.status(401).json({ error: "Incorrect password" });
-        // }
-
-        if(group.password !== password){
+        const isMatch = await bcrypt.compare(password, group.password);
+        if (!isMatch) {
             return res.status(401).json({ error: "Incorrect password" });
         }
+
 
         res.json({ message: "Password verified. You can now chat." });
     } catch (error) {

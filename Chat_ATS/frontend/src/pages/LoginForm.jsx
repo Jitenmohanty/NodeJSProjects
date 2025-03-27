@@ -3,9 +3,10 @@ import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContex";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
-const LoginForm = ({ switchToRegister }) => {
+const LoginForm = () => {
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
@@ -241,7 +242,7 @@ const LoginForm = ({ switchToRegister }) => {
               <motion.button
                 type="submit"
                 disabled={isLoading}
-                className={`w-full p-3 rounded-lg font-semibold ${
+                className={`w-full p-3 flex justify-center items-center rounded-lg font-semibold ${
                   isLoading
                     ? "bg-green-400 cursor-not-allowed"
                     : "bg-gradient-to-r from-green-400 to-blue-500"
@@ -249,7 +250,20 @@ const LoginForm = ({ switchToRegister }) => {
                 whileHover={!isLoading ? { scale: 1.02 } : {}}
                 whileTap={!isLoading ? { scale: 0.98 } : {}}
               >
-                {isLoading ? "Logging in..." : "Login"}
+                {isLoading ? (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                  >
+                    <Loader2 className="w-5 h-5" />
+                  </motion.div>
+                ) : (
+                  "Login"
+                )}
               </motion.button>
             </motion.div>
           </motion.form>
@@ -260,16 +274,14 @@ const LoginForm = ({ switchToRegister }) => {
             variants={itemVariants}
           >
             Don't have an account?{" "}
-            <motion.button
-              onClick={switchToRegister}
+            <Link
+              to="/auth?mode=register"
               className={`font-semibold ${
                 darkMode ? "text-green-400" : "text-blue-500"
               }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
             >
               Register
-            </motion.button>
+            </Link>
           </motion.p>
         </motion.div>
       </motion.div>

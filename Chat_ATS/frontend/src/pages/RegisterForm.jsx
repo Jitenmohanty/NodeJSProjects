@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContex";
 import { toast } from "react-toastify";
+import { Loader2 } from "lucide-react";
 
 const RegisterForm = ({ switchToLogin }) => {
   const { register } = useAuth();
@@ -585,19 +586,32 @@ const RegisterForm = ({ switchToLogin }) => {
               )}
 
               <motion.div variants={itemVariants}>
-                <motion.button
-                  type="submit"
-                  disabled={isLoading}
-                  className={`w-full p-2 rounded-lg font-semibold ${
-                    isLoading
-                      ? "bg-green-400 cursor-not-allowed"
-                      : "bg-gradient-to-r from-green-400 to-blue-500 hover:from-green-500 hover:to-blue-600"
-                  } text-white shadow-md`}
-                  whileHover={!isLoading ? { scale: 1.02 } : {}}
-                  whileTap={!isLoading ? { scale: 0.98 } : {}}
-                >
-                  {isLoading ? "Creating Account..." : "Join Now"}
-                </motion.button>
+              <motion.button
+                type="submit"
+                disabled={isLoading}
+                className={`w-full p-3 flex justify-center items-center rounded-lg font-semibold ${
+                  isLoading
+                    ? "bg-green-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-green-400 to-blue-500"
+                } text-white`}
+                whileHover={!isLoading ? { scale: 1.02 } : {}}
+                whileTap={!isLoading ? { scale: 0.98 } : {}}
+              >
+                {isLoading ? (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                  >
+                    <Loader2 className="w-6 h-6" />
+                  </motion.div>
+                ) : (
+                  "Register"
+                )}
+              </motion.button>
               </motion.div>
             </motion.form>
             <motion.p
