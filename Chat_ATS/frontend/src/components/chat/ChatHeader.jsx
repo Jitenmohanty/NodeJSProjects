@@ -93,7 +93,7 @@ const ChatHeader = React.memo(
     };
 
     const getName = () => {
-      if (group) return group.name;
+      if (group) return groups.find(gr => gr.id === group.id)?.name;
       if (selectedUser) return selectedUser.name;
       if (selectBot) return selectBot.name;
       return "Chat";

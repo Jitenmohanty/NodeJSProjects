@@ -22,9 +22,25 @@ const ChatList = ({
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [filteredGroups, setFilteredGroups] = useState([]);
 
+  // Sort users by lastMessageTimestamp (newest first) and prioritize unread messages
+  const sortedUsers = useMemo(() => {
+    return [...users].sort((a, b) => {
+      // First sort by unread status
+      const unreadA = unreadMessages[a._id] || 0;
+      const unreadB = unreadMessages[b._id] || 0;
+      
+      if (unreadA !== unreadB) {
+        return unreadB - unreadA; // More unreads first
+      }
+      
+      // Then by timestamp
+      const timeA = a.lastMessageTimestamp || 0;
+      const timeB = b.lastMessageTimestamp || 0;
+      return timeB - timeA; // Newest first
+    });
+  }, [users, unreadMessages]);
 
-  // Memoize the original data
-  const memoizedUsers = useMemo(() => users, [users]);
+  // Memoize groups
   const memoizedGroups = useMemo(() => groups, [groups]);
 
   // Debounce function
@@ -39,7 +55,7 @@ const ChatList = ({
   // Filter function for both users and groups
   const filterItems = useCallback((searchTerm) => {
     if (!searchTerm.trim()) {
-      setFilteredUsers(memoizedUsers);
+      setFilteredUsers(sortedUsers);
       setFilteredGroups(memoizedGroups);
       return;
     }
@@ -47,17 +63,15 @@ const ChatList = ({
     const lowerSearch = searchTerm.toLowerCase();
     
     setFilteredUsers(
-      memoizedUsers.filter(user => 
-        user.name.toLowerCase().includes(lowerSearch)
-      )
+      sortedUsers.filter(user => 
+        user.name.toLowerCase().includes(lowerSearch))
     );
     
     setFilteredGroups(
       memoizedGroups.filter(group => 
-        group.name.toLowerCase().includes(lowerSearch)
-      )
+        group.name.toLowerCase().includes(lowerSearch))
     );
-  }, [memoizedUsers, memoizedGroups]);
+  }, [sortedUsers, memoizedGroups]);
 
   // Create debounced version of filterItems
   const debouncedFilter = useMemo(
@@ -74,9 +88,9 @@ const ChatList = ({
 
   // Initialize filtered data
   useEffect(() => {
-    setFilteredUsers(memoizedUsers);
+    setFilteredUsers(sortedUsers);
     setFilteredGroups(memoizedGroups);
-  }, [memoizedUsers, memoizedGroups]);
+  }, [sortedUsers, memoizedGroups]);
 
   // Filter items based on selected tab
   const getFilteredItems = (items, isGroup = false) => {
@@ -97,7 +111,6 @@ const ChatList = ({
         return isGroup ? items : [];
       
       case "Favorites":
-        // Implement favorite logic (assuming items have isFavorite property)
         return items.filter(item => item.isFavorite);
       
       default:
@@ -105,10 +118,8 @@ const ChatList = ({
     }
   };
 
-  const filteredUserList = getFilteredItems(users);
+  const filteredUserList = getFilteredItems(sortedUsers);
   const filteredGroupList = getFilteredItems(groups, true);
-  console.log(filteredGroupList)
-  console.log(filteredUserList)
 
   return (
     <div
@@ -140,7 +151,7 @@ const ChatList = ({
           value={search}
           className={`bg-transparent ${
             darkMode ? "text-white" : "text-gray-900"
-          } outline-none w-full placeholder-gray-400 transition-all duration-300`}
+          } outline-none w-full placeholder-gray-400 transition-all duration-300 placeholder:text-sm`}
           placeholder="Search users or groups..."
           onChange={handleSearch}
           onFocus={() => setIsFocused(true)}

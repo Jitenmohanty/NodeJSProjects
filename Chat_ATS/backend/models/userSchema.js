@@ -10,6 +10,9 @@ const userSchema = new mongoose.Schema({
   gender: { type: String, enum: ["Male", "Female", "Other"], default: "Male" },
   profilePicture: { type: String }, // Store image URL or file path
   online: { type: Boolean, default: false },
+  otp:{type:String},
+  isVerified:{type:Boolean,default:false},
+  otpExpires:{type:Date},
   blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Track blocked users
 }, { timestamps: true });
 

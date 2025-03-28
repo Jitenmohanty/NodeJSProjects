@@ -9,9 +9,11 @@ import { ToastContainer } from "react-toastify";
 import AuthCheck from "./layouts/AuthCheck";
 import Home from "./components/Home";
 import ChatInterface from "./components/chat/ChatInterface";
+
 import "./App.css";
 
 const AuthComponent = React.lazy(() => import("./components/AuthComponent"));
+const VerifyOTP = React.lazy(() => import("./pages/VerifyOTP"));
 
 const App = () => {
   return (
@@ -34,6 +36,14 @@ const App = () => {
                     element={
                       <Suspense fallback={<div>Loading...</div>}>
                         <AuthComponent />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/verify-otp"
+                    element={
+                      <Suspense fallback={<div>Loading...</div>}>
+                        <VerifyOTP />
                       </Suspense>
                     }
                   />

@@ -1,5 +1,5 @@
 import express from "express";
-import { blockUser, getUsers, Login, register, unBlockUser, updateProfile } from "../controllers/userController.js";
+import { blockUser, getUsers, Login, register, unBlockUser, updateProfile, verifyOTP } from "../controllers/userController.js";
 import { authenticateToken } from "../middleware/authMiddleware.js";
 import { upload } from "../middleware/fileUploadMiddleware.js";
 
@@ -8,6 +8,7 @@ const router = express.Router();
 // Authentication Routes
 router.post("/login", Login);
 router.post("/register", upload.single("profilePicture"), register);
+router.post('/verify-otp', verifyOTP);
 
 // Profile Update Route (Handles File Upload and Other Data)
 router.put("/update-profile", authenticateToken, upload.single("profilePicture"), updateProfile);

@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 import useSocket from "../hooks/useSocket";
 import { toast } from "react-toastify";
+import {useNavigate} from "react-router-dom"
 
 
 const AuthContext = createContext(null);
@@ -11,6 +12,9 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
+  const [verificationData, setVerificationData] = useState(null);
+  const [error,setError] = useState(null)
+  const navigate = useNavigate();
 
   // Use the optimized socket hook
   const { socket } = useSocket(user?.id, setUsers);
@@ -108,13 +112,19 @@ export const AuthProvider = ({ children }) => {
         formPayload.append("profilePicture", profilePicture);
       }
 
-      await axios.post(
+      const res = await axios.post(
         `${import.meta.env.VITE_FRONTEND_URI}/users/register`,
         formPayload,
         {
           headers: { "Content-Type": "multipart/form-data" },
         }
       );
+
+      setVerificationData({
+        userId: res.data.id,
+        email: formData.email
+      });
+      navigate('/verify-otp');
 
       return { success: true };
     } catch (error) {
@@ -175,6 +185,23 @@ export const AuthProvider = ({ children }) => {
       setUsers(response.data);
     } catch (error) {
       console.error("Failed to fetch users:", error);
+    }
+  };
+
+  const verifyOTP = async (otp) => {
+    try {
+      setLoading(true);
+      console.log(verificationData)
+    const res =   await axios.post(`${import.meta.env.VITE_FRONTEND_URI}/users/verify-otp`, {
+        userId: verificationData.userId,
+        otp
+      });
+      
+      navigate('/auth?mode=login');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Verification failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -261,6 +288,7 @@ export const AuthProvider = ({ children }) => {
         updateProfile,
         BlockUser,
         UnblockUser,
+        verifyOTP
       }}
     >
       {children}

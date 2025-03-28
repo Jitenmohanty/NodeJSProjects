@@ -2,6 +2,9 @@ import React, { useCallback, useState } from "react";
 import { useGroup } from "../../context/GroupContext";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContex";
+import { motion } from "framer-motion";
+
+import { Loader2 } from "lucide-react";
 
 const GroupList = ({
   groups,
@@ -10,12 +13,8 @@ const GroupList = ({
   setSelectedUser,
   setSelectedBot,
 }) => {
-  const {
-    loading,
-    isAuthorizedForGroup,
-    verifyGroupPassword,
-    setActiveGroup,
-  } = useGroup();
+  const { loading, isAuthorizedForGroup, verifyGroupPassword, setActiveGroup } =
+    useGroup();
   const { user } = useAuth();
   const { darkMode } = useTheme();
   const [password, setPassword] = useState("");
@@ -82,16 +81,28 @@ const GroupList = ({
 
   // Move the conditional rendering to the return statement instead of early return
   return (
-    <div className="overflow-y-auto">
+    <div className="overflow-y-auto overflow-x-hidden">
       {loading ? (
-        <div className="p-4 text-center text-white">Loading groups...</div>
+        <motion.div
+        className="flex justify-center px-10 items-center"
+          animate={{ rotate: 360 }}
+          transition={{
+            duration: 1,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        >
+          <Loader2 className="w-8 h-8" />
+        </motion.div>
       ) : groups?.length > 0 ? (
         groups.map((group) => (
           <div
             key={group._id}
-            className={`flex items-center justify-between px-2 py-3  cursor-pointer border-b-[1px] border-gray-600 transition relative ${darkMode ? 
-              "hover:bg-gray-700 hover:bg-opacity-80" : 
-              "hover:bg-gray-300 hover:bg-opacity-90"}
+            className={`flex items-center justify-between px-2 py-3  cursor-pointer border-b-[1px] border-gray-600 transition relative ${
+              darkMode
+                ? "hover:bg-gray-700 hover:bg-opacity-80"
+                : "hover:bg-gray-300 hover:bg-opacity-90"
+            }
           `}
             onClick={() => handleGroupSelection(group)}
           >

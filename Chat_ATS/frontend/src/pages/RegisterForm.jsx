@@ -4,10 +4,12 @@ import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContex";
 import { toast } from "react-toastify";
 import { Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 
-const RegisterForm = ({ switchToLogin }) => {
+const RegisterForm = () => {
   const { register } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
     nickname: "",
@@ -144,7 +146,8 @@ const RegisterForm = ({ switchToLogin }) => {
             theme: darkMode ? "dark" : "light",
           }
         );
-        switchToLogin();
+        navigate("/verify-otp")
+        
       } else {
         toast.error(
           <div className="flex items-center">
@@ -621,16 +624,14 @@ const RegisterForm = ({ switchToLogin }) => {
               variants={itemVariants}
             >
               Already have an account?{" "}
-              <motion.button
-                onClick={switchToLogin}
-                className={`font-semibold ${
-                  darkMode ? "text-green-400" : "text-blue-500"
-                }`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Sign In
-              </motion.button>
+              <Link
+                            to="/auth?mode=login"
+                            className={`font-semibold ${
+                              darkMode ? "text-green-400" : "text-blue-500"
+                            }`}
+                          >
+                            Sign In
+                          </Link>
             </motion.p>
           </div>
         </motion.div>
