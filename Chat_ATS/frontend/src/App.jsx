@@ -34,7 +34,9 @@ const App = () => {
                   <Route
                     path="/auth"
                     element={
-                      <Suspense fallback={<div>Loading...</div>}>
+                      <Suspense fallback={<div className="flex h-screen items-center justify-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                      </div>}>
                         <AuthComponent />
                       </Suspense>
                     }
@@ -42,7 +44,9 @@ const App = () => {
                   <Route
                     path="/verify-otp"
                     element={
-                      <Suspense fallback={<div>Loading...</div>}>
+                      <Suspense fallback={<div className="flex h-screen items-center justify-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                      </div>}>
                         <VerifyOTP />
                       </Suspense>
                     }

@@ -13,11 +13,15 @@ import { Server } from "socket.io";
 import { User } from "./models/userSchema.js";
 import { setupSocketIO } from "./Socket/socketHandler.js";
 import botMessageRoute from "./routes/chatBotRoute.js"
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from "./utils/swagger.js";
 // Load environment variables
 dotenv.config();
 
 // Initialize express app and server
 const app = express();
+// Swagger route
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -96,4 +100,5 @@ setupSocketIO(io);
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`API Documentation available at: http://localhost:${PORT}/api-docs`);
 });

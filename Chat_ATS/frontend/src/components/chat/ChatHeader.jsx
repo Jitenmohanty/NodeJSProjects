@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  X,
   ArrowLeft,
   MoreVertical,
   UserX,
@@ -8,6 +7,7 @@ import {
   Bell,
   Info,
   User,
+  Video,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useGroup } from "../../context/GroupContext";
@@ -15,20 +15,13 @@ import { useTheme } from "../../context/ThemeContex";
 import ProfileModal from "../sidebar/ProfileModal";
 
 const ChatHeader = React.memo(
-  ({
-    selectedUser,
-    setSelectedUser,
-    group,
-    onBack,
-    selectBot,
-  }) => {
+  ({ selectedUser, setSelectedUser, group, onBack, selectBot, initiateCall }) => {
     const { darkMode } = useTheme();
     const [showMenu, setShowMenu] = useState(false);
     const [openProfile, setOpenProfile] = useState(false);
     const [isBlocked, setIsBlocked] = useState(false);
     const { BlockUser, UnblockUser, user } = useAuth();
     const { groups } = useGroup();
-    // console.log(groups)
 
     let currentGroup = [];
 
@@ -41,8 +34,6 @@ const ChatHeader = React.memo(
       selectedUser ||
       (currentGroup.length > 0 ? currentGroup[0] : null) ||
       selectBot;
-
-    // console.log(currentGroup, groups);
 
     useEffect(() => {
       const checkIfUserIsBlocked = () => {
@@ -93,7 +84,7 @@ const ChatHeader = React.memo(
     };
 
     const getName = () => {
-      if (group) return groups.find(gr => gr.id === group.id)?.name;
+      if (group) return groups.find((gr) => gr.id === group.id)?.name || group.name;
       if (selectedUser) return selectedUser.name;
       if (selectBot) return selectBot.name;
       return "Chat";
@@ -120,7 +111,9 @@ const ChatHeader = React.memo(
 
     return (
       <div
-        className={` ${entity?"p-3":"p-4.5"} flex items-center justify-between ${
+        className={` ${
+          entity ? "p-3" : "p-4.5"
+        } flex items-center justify-between ${
           darkMode
             ? "bg-gradient-to-r from-blue-700 to-blue-800"
             : "bg-gradient-to-r from-blue-500 to-blue-600"
@@ -171,8 +164,19 @@ const ChatHeader = React.memo(
           )}
         </div>
 
-        {/* Right Section: More Options and Close Button */}
+        {/* Right Section: Action Buttons */}
         <div className="flex items-center space-x-2">
+          {/* Video Call Button - Only show for individual users, not groups or bots */}
+          {selectedUser && !isBlocked && (
+            <button
+              onClick={initiateCall}
+              className="text-white hover:text-gray-200 p-1 cursor-pointer"
+              title="Start video call"
+            >
+              <Video className="w-5 h-5" />
+            </button>
+          )}
+
           {/* Three-dot Menu Button */}
           {entity && (
             <div className="relative">
@@ -225,8 +229,6 @@ const ChatHeader = React.memo(
               )}
             </div>
           )}
-
-          
         </div>
 
         {/* Click outside to close menu */}

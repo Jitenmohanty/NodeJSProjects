@@ -78,10 +78,10 @@ export const useGroupSocket = (userId, updateUnreadCount) => {
   }, [userId]);
 
   const leaveGroup = useCallback((groupId) => {
-    if (socketRef.current && userId) {
-      console.log(`User ${userId} leaving group: ${groupId}`);
-      socketRef.current.emit('leave_group', groupId);
-    }
+    // if (socketRef.current && userId) {
+    //   console.log(`User ${userId} leaving group: ${groupId}`);
+    //   socketRef.current.emit('leave_group', groupId);
+    // }
   }, [userId]);
 
   const sendGroupMessage = useCallback((groupId, text, fileData = null, tempId = null) => {

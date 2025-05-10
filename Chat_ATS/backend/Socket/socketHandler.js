@@ -189,6 +189,120 @@ export const setupSocketIO = (io) => {
       }
     });
 
+    // Video call handlers - with proper signaling
+    socket.on("initiate_video_call", async ({ caller, callee, callerName, roomId }) => {
+      try {
+        console.log(`Call initiated from ${caller} to ${callee}, room: ${roomId}`);
+        const calleeSocketId = connectedUsers.get(callee);
+        
+        if (calleeSocketId) {
+          // Notify callee about incoming call with roomId
+          io.to(calleeSocketId).emit("incoming_video_call", {
+            caller,
+            callerName,
+            roomId
+          });
+        } else {
+          // Notify caller that callee is offline
+          const callerSocketId = connectedUsers.get(caller);
+          if (callerSocketId) {
+            io.to(callerSocketId).emit("callee_unavailable");
+          }
+        }
+      } catch (error) {
+        console.error("Error initiating video call:", error);
+      }
+    });
+    
+    socket.on("accept_video_call", ({ caller, callee, roomId }) => {
+      try {
+        console.log(`Call accepted: ${caller} to ${callee}, room: ${roomId}`);
+        const callerSocketId = connectedUsers.get(caller);
+        
+        if (callerSocketId) {
+          io.to(callerSocketId).emit("video_call_accepted", { roomId });
+        }
+      } catch (error) {
+        console.error("Error accepting video call:", error);
+      }
+    });
+    
+    socket.on("reject_video_call", ({ caller, callee, roomId }) => {
+      try {
+        console.log(`Call rejected: ${caller} to ${callee}`);
+        const callerSocketId = connectedUsers.get(caller);
+        
+        if (callerSocketId) {
+          io.to(callerSocketId).emit("video_call_rejected");
+        }
+      } catch (error) {
+        console.error("Error rejecting video call:", error);
+      }
+    });
+    
+    socket.on("end_video_call", ({ caller, callee, roomId }) => {
+      try {
+        console.log(`Call ended: ${caller} to ${callee}, room: ${roomId}`);
+        // Notify both caller and callee
+        const callerSocketId = connectedUsers.get(caller);
+        const calleeSocketId = connectedUsers.get(callee);
+        
+        if (callerSocketId) io.to(callerSocketId).emit("video_call_ended");
+        if (calleeSocketId) io.to(calleeSocketId).emit("video_call_ended");
+      } catch (error) {
+        console.error("Error ending video call:", error);
+      }
+    });
+    
+    // WebRTC signaling
+    socket.on("offer", ({ offer, roomId, targetUser }) => {
+      try {
+        console.log(`Offer sent to ${targetUser}, room: ${roomId}`);
+        const targetSocketId = connectedUsers.get(targetUser);
+        
+        if (targetSocketId) {
+          io.to(targetSocketId).emit("offer", {
+            offer,
+            roomId,
+            caller: socket.userId || socket.id
+          });
+        }
+      } catch (error) {
+        console.error("Error forwarding offer:", error);
+      }
+    });
+    
+    socket.on("answer", ({ answer, roomId, targetUser }) => {
+      try {
+        console.log(`Answer sent to ${targetUser}, room: ${roomId}`);
+        const targetSocketId = connectedUsers.get(targetUser);
+        
+        if (targetSocketId) {
+          io.to(targetSocketId).emit("answer", {
+            answer,
+            roomId
+          });
+        }
+      } catch (error) {
+        console.error("Error forwarding answer:", error);
+      }
+    });
+    
+    socket.on("ice_candidate", ({ candidate, roomId, targetUser }) => {
+      try {
+        const targetSocketId = connectedUsers.get(targetUser);
+        
+        if (targetSocketId) {
+          io.to(targetSocketId).emit("ice_candidate", {
+            candidate,
+            roomId
+          });
+        }
+      } catch (error) {
+        console.error("Error forwarding ICE candidate:", error);
+      }
+    });
+
     socket.on("user_disconnected", async (userId) => {
       try {
         connectedUsers.delete(userId);
