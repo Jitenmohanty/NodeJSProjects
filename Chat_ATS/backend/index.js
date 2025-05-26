@@ -25,10 +25,10 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 const server = http.createServer(app);
 // Updated CORS configuration in your main server file
 const allowedOrigins = [
-  "http://localhost:5173", // Development
-  "http://localhost:3000", // Development backend
   process.env.FRONTEND_URL, // Production frontend
 ];
+
+console.log(allowedOrigins,"allowedOrigins")
 
 app.use(cors({
   origin: function (origin, callback) {
