@@ -188,8 +188,6 @@ const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
     methods: ["GET", "POST"],
-    credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"]
   },
   allowEIO3: true, // Allow Engine.IO v3 clients
   transports: ['polling', 'websocket'] // Enable both transports
