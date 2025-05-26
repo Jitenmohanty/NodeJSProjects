@@ -6,7 +6,7 @@ const useSocket = (userId, setUsers) => {
 
   useEffect(() => {
     // Initialize socket connection
-    socketRef.current = io('http://localhost:3000');
+    socketRef.current = io(`${import.meta.env.VITE_FRONTEND_URI}`);
 
     if (userId) {
       //console.log(`User ${userId} connected to direct message socket`);

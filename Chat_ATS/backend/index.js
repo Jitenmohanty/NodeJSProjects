@@ -23,15 +23,35 @@ const app = express();
 // Swagger route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 const server = http.createServer(app);
+// Updated CORS configuration in your main server file
+const allowedOrigins = [
+  "http://localhost:5173", // Development
+  "http://localhost:3000", // Development backend
+  process.env.FRONTEND_URL, // Production frontend
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
+// Update Socket.IO CORS as well
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
+    credentials: true
   },
 });
-
-// Configure middleware
-app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 

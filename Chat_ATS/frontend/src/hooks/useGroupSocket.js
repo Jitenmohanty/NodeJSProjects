@@ -8,7 +8,7 @@ export const useGroupSocket = (userId, updateUnreadCount) => {
     if (!userId) return;
     
     if (!socketRef.current) {
-      socketRef.current = io('http://localhost:3000', {
+      socketRef.current = io(`${import.meta.env.VITE_FRONTEND_URI}`, {
         reconnection: true,
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,

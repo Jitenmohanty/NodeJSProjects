@@ -604,7 +604,11 @@ const ChatInterface = () => {
     setUploading(true);
     const formData = new FormData();
     formData.append("file", file);
-
+    
+    // console.log(JSON.stringify(formData))
+    formData.forEach((val,key)=>{
+      console.log(`${key}`,val)
+    })
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_FRONTEND_URI}/upload/file`,
@@ -613,6 +617,7 @@ const ChatInterface = () => {
           headers: { "Content-Type": "multipart/form-data" },
         }
       );
+
 
       const fileData = {
         fileUrl: response.data.fileUrl,

@@ -9,6 +9,10 @@ const userSchema = new mongoose.Schema({
   bio: { type: String },
   gender: { type: String, enum: ["Male", "Female", "Other"], default: "Male" },
   profilePicture: { type: String }, // Store image URL or file path
+   cloudinaryId: {
+    type: String, // Cloudinary public_id for easy deletion and manipulation
+    default: null
+  },
   online: { type: Boolean, default: false },
   otp:{type:String},
   isVerified:{type:Boolean,default:false},
