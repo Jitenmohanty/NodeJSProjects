@@ -12,21 +12,26 @@ const app = express();
 connectDB();
 
 //middlewares
+const cors = require('cors');
+
 const allowedOrigins = [
   'https://quiz-genie-academy-pro.vercel.app',
-  'http://localhost:8080' // For local dev testing (optional)
+  'http://localhost:8080' // Optional: for local dev
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error('CORS not allowed from this origin'));
     }
   },
-  credentials: true, // if you're using cookies or sessions
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'], // Make sure Authorization is allowed for JWT
 }));
+
 
 
 app.use(express.json());
