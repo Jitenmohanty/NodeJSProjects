@@ -10,6 +10,7 @@ require('./config/passport'); // Add this line
 
 // Initialize app
 const app = express();
+app.enable('trust proxy'); // Trust the Vercel proxy
 
 // Connect to database
 connectDB();
@@ -22,18 +23,27 @@ const allowedOrigins = [
   'http://localhost:5173' // Optional: for local dev
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS not allowed from this origin'));
-    }
-  },
+const corsOptions = {
+  origin: allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'], // Make sure Authorization is allowed for JWT
-}));
+  allowedHeaders: [
+    'X-CSRF-Token',
+    'X-Requested-With',
+    'Accept',
+    'Accept-Version',
+    'Content-Length',
+    'Content-MD5',
+    'Content-Type',
+    'Date',
+    'X-Api-Version',
+    'Authorization'
+  ],
+  credentials: true,
+  optionsSuccessStatus: 204 // For legacy browser compatibility
+};
+
+// Enable CORS for all requests using the defined options
+app.use(cors(corsOptions));
 
 // Add session middleware before passport
 app.use(session({
