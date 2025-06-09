@@ -18,7 +18,7 @@ connectDB();
 // const cors = require('cors');
 
 const allowedOrigins = [
-  // 'https://quiz-genie-academy-pro.vercel.app',
+  'https://quiz-genie-academy-pro.vercel.app',
   'http://localhost:5173' // Optional: for local dev
 ];
 
