@@ -4,6 +4,9 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const connectDB = require('./config/db');
+const session = require('express-session');
+const passport = require('passport');
+require('./config/passport'); // Add this line
 
 // Initialize app
 const app = express();
@@ -12,11 +15,11 @@ const app = express();
 connectDB();
 
 //middlewares
-const cors = require('cors');
+// const cors = require('cors');
 
 const allowedOrigins = [
-  'https://quiz-genie-academy-pro.vercel.app',
-  'http://localhost:8080' // Optional: for local dev
+  // 'https://quiz-genie-academy-pro.vercel.app',
+  'http://localhost:5173' // Optional: for local dev
 ];
 
 app.use(cors({
@@ -31,6 +34,17 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'], // Make sure Authorization is allowed for JWT
 }));
+
+// Add session middleware before passport
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-session-secret',
+  resave: false,
+  saveUninitialized: false
+}));
+
+// Add passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
 
 
 
